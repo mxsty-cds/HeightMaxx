@@ -8,3 +8,4 @@ analyzer:
     - "examples/**"
     - "docs/**"
     - "build/**"
+    - "flutter_application_1/**"

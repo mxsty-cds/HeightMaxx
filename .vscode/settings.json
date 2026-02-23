@@ -9,7 +9,8 @@
     "packages",
     "examples",
     "docs",
-    "build"
+    "build",
+    "flutter_application_1"
   ]
 }
 {
