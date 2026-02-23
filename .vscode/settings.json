@@ -1,0 +1,17 @@
+{
+  // Exclude large Flutter SDK and repository folders from the Dart analyzer
+  // so the editor focuses on your application code.
+  "dart.analysisExcludedFolders": [
+    "flutter",
+    "third_party",
+    "engine",
+    "dev",
+    "packages",
+    "examples",
+    "docs",
+    "build"
+  ]
+}
+{
+    "dart.showTodos": false
+}

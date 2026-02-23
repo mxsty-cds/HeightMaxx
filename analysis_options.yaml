@@ -1,0 +1,10 @@
+analyzer:
+  exclude:
+    - "flutter/**"
+    - "third_party/**"
+    - "engine/**"
+    - "dev/**"
+    - "packages/**"
+    - "examples/**"
+    - "docs/**"
+    - "build/**"
