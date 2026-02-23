@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/user.dart';
 import '../models/task.dart';
-import '../models/xp_event.dart';
+import '../models/user.dart';
 import '../models/xp_engine.dart';
+import '../models/xp_event.dart';
+import '../theme/app_colors.dart';
 import '../widgets/growth_meter.dart';
 import '../widgets/task_card.dart';
-import '../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({super.key, this.user});
+
+  final UserProfile? user;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
   late UserProfile _user;
   late List<HeightTask> _tasks;
-  
-  // Initialize the gamification engine
+
   final XpEngine _xpEngine = XpEngine();
 
-  // Animations
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
   late final Animation<Offset> _slideAnim;
@@ -31,24 +32,37 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _loadMockData();
+    _loadData();
     _setupAnimations();
   }
 
-  void _loadMockData() {
-    _user = UserProfile(
-      id: 'usr_123',
-      displayName: 'Alex',
-      level: 1,
-      currentXp: 40,
-      xpToNextLevel: 100, // Based on new formula
-      streakDays: 5,
-      lastActiveDate: DateTime.now().subtract(const Duration(days: 0)), // Today, to start streak
-    );
+  void _loadData() {
+    _user =
+        widget.user ??
+        UserProfile.fromJson({
+          'id': 'usr_123',
+          'displayName': 'Alex',
+          'username': 'alex_123',
+          'nickname': 'Alex',
+          'level': 1,
+          'currentXp': 40,
+          'xpToNextLevel': 100,
+          'streakDays': 5,
+        });
 
-    _tasks = [
-      const HeightTask(id: 't1', title: 'Morning Stretch Flow', xpReward: 40, category: 'Mobility'),
-      const HeightTask(id: 't2', title: 'Posture Reset', xpReward: 30, category: 'Posture'),
+    _tasks = const [
+      HeightTask(
+        id: 't1',
+        title: 'Morning Stretch Flow',
+        xpReward: 40,
+        category: 'Mobility',
+      ),
+      HeightTask(
+        id: 't2',
+        title: 'Posture Reset',
+        xpReward: 30,
+        category: 'Posture',
+      ),
     ];
   }
 
@@ -60,9 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
   }
 
@@ -76,27 +89,26 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     HapticFeedback.lightImpact();
     setState(() {
       final task = _tasks[index];
-      if (!task.isCompleted) {
-        // Complete the task
-        _tasks[index] = task.complete();
-        
-        // Generate an XP Event and process it through the engine
-        final event = XpEvent(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: XpActionType.taskCompletion,
-          xpAmount: task.xpReward,
-          createdAt: DateTime.now(),
-        );
-        
-        final previousLevel = _user.level;
-        _user = _xpEngine.applyEvent(_user, event);
+      if (task.isCompleted) {
+        return;
+      }
 
-        // Check for level up to show a specific UI celebration
-        if (_user.level > previousLevel) {
-          _showLevelUpDialog(_user.level);
-        } else {
-          _showXpToast(task.xpReward);
-        }
+      _tasks[index] = task.complete();
+
+      final event = XpEvent(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: XpActionType.taskCompletion,
+        xpAmount: task.xpReward,
+        createdAt: DateTime.now(),
+      );
+
+      final previousLevel = _user.level;
+      _user = _xpEngine.applyEvent(_user, event);
+
+      if (_user.level > previousLevel) {
+        _showLevelUpDialog(_user.level);
+      } else {
+        _showXpToast(task.xpReward);
       }
     });
   }
@@ -115,17 +127,16 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   void _showLevelUpDialog(int newLevel) {
-    // Simple placeholder for a premium level-up celebration
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Level Up! 🏢'),
-        content: Text('You have reached Level $newLevel. Keep climbing.'),
+        content: Text('You reached Level $newLevel. Keep climbing.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Continue'),
-          )
+          ),
         ],
       ),
     );
@@ -160,6 +171,13 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   Widget _buildHeader() {
+    final userJson = _user.toJson();
+    final nickname = (userJson['nickname'] as String?)?.trim() ?? '';
+    final displayName = (userJson['displayName'] as String?)?.trim() ?? '';
+    final greetingName = nickname.isNotEmpty
+        ? nickname
+        : (displayName.isNotEmpty ? displayName : 'Mover');
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,19 +185,32 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Welcome back,', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+            const Text(
+              'Welcome back,',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 4),
-            Text(_user.displayName, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+            Text(
+              greetingName,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ],
         ),
-        // Streak display
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha((0.04 * 255).round()), blurRadius: 12, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: Colors.black.withAlpha((0.04 * 255).round()),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Row(
@@ -189,8 +220,22 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text('Streak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                  Text('${_user.streakDays} days', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accent)),
+                  const Text(
+                    'Streak',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    '${_user.streakDays} days',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.accent,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -209,7 +254,11 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha((0.04 * 255).round()), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.black.withAlpha((0.04 * 255).round()),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Row(
@@ -219,28 +268,46 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Level ${_user.level}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                Text(
+                  'Level ${_user.level}',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('${_user.currentXp} / ${_user.xpToNextLevel} XP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.accent)),
+                Text(
+                  '${_user.currentXp} / ${_user.xpToNextLevel} XP',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.accent,
+                  ),
+                ),
                 const SizedBox(height: 16),
-                
-                // Dynamic Unlock Hint
                 if (nextUnlock != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.accentLight,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Next: ${nextUnlock.name} at Lvl ${nextUnlock.unlockLevel}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accentDark),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accentDark,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
-          // Skyscraper visual
           GrowthMeter(progress: _user.progressToNextLevel),
         ],
       ),
@@ -251,15 +318,19 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Today\'s Growth Missions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        const Text(
+          'Today\'s Growth Missions',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 16),
         ...List.generate(_tasks.length, (index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
-            child: TaskCard(
-              task: _tasks[index],
-              onTap: () => _handleTaskTap(index),
-            ),
+            child: TaskCard(task: _tasks[index], onTap: () => _handleTaskTap(index)),
           );
         }),
       ],

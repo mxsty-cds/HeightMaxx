@@ -1,15 +1,16 @@
-/// lib/models/user.dart
-///
-/// Extended UserProfile integrating biometric data and habit tracking
-/// alongside the existing XP gamification system.
-library;
+// lib/models/user.dart
+//
+// Extended UserProfile integrating biometric data, habit tracking,
+// gamification, and the new distinct identity fields (username/nickname).
 
 import 'user_factors.dart';
 import 'growth_profile.dart';
 
 class UserProfile {
+  // Identity Fields
   final String id;
-  final String displayName;
+  final String username;
+  final String nickname;
   
   // Gamification Fields
   final int level;
@@ -22,7 +23,7 @@ class UserProfile {
   final List<String> unlockedAvatarTierIds;
   final List<String> unlockedWorkoutTierIds;
 
-  // --- NEW: Biometric & Habit Fields ---
+  // Biometric & Habit Fields
   final int? age;
   final Sex? sex;
   final double? heightCm;
@@ -36,7 +37,8 @@ class UserProfile {
 
   const UserProfile({
     required this.id,
-    required this.displayName,
+    required this.username,
+    required this.nickname,
     this.level = 1,
     this.currentXp = 0,
     this.xpToNextLevel = 100,
@@ -84,7 +86,8 @@ class UserProfile {
 
   UserProfile copyWith({
     String? id,
-    String? displayName,
+    String? username,
+    String? nickname,
     int? level,
     int? currentXp,
     int? xpToNextLevel,
@@ -107,7 +110,8 @@ class UserProfile {
   }) {
     return UserProfile(
       id: id ?? this.id,
-      displayName: displayName ?? this.displayName,
+      username: username ?? this.username,
+      nickname: nickname ?? this.nickname,
       level: level ?? this.level,
       currentXp: currentXp ?? this.currentXp,
       xpToNextLevel: xpToNextLevel ?? this.xpToNextLevel,
@@ -133,7 +137,8 @@ class UserProfile {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'displayName': displayName,
+      'username': username,
+      'nickname': nickname,
       'level': level,
       'currentXp': currentXp,
       'xpToNextLevel': xpToNextLevel,
@@ -159,7 +164,8 @@ class UserProfile {
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
-      displayName: json['displayName'] as String,
+      username: json['username'] as String? ?? 'user_000',
+      nickname: json['nickname'] as String? ?? 'SkyStretcher',
       level: json['level'] as int? ?? 1,
       currentXp: json['currentXp'] as int? ?? 0,
       xpToNextLevel: json['xpToNextLevel'] as int? ?? 100,
