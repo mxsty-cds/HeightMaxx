@@ -7,7 +7,43 @@ class XpEngine {
   /// Applies a specific XP event (e.g., stretching, completing a task) to the user.
   UserProfile applyEvent(UserProfile user, XpEvent event) {
     // TODO: Optionally log 'event' to an analytics or history service here.
-    return addXp(user, event.xpAmount);
+    
+    // Update streak based on consecutive daily activity
+    int newStreakDays = user.streakDays;
+    DateTime today = DateTime.now();
+    DateTime todayMidnight = DateTime(today.year, today.month, today.day);
+    
+    if (user.lastActiveDate == null) {
+      // First activity ever
+      newStreakDays = 1;
+    } else {
+      DateTime lastActiveMidnight = DateTime(
+        user.lastActiveDate!.year,
+        user.lastActiveDate!.month,
+        user.lastActiveDate!.day,
+      );
+      
+      final daysDifference = todayMidnight.difference(lastActiveMidnight).inDays;
+      
+      if (daysDifference == 0) {
+        // Same day, streak continues unchanged
+        newStreakDays = user.streakDays;
+      } else if (daysDifference == 1) {
+        // Next consecutive day, increment streak
+        newStreakDays = user.streakDays + 1;
+      } else {
+        // Gap in activity, reset streak to 1
+        newStreakDays = 1;
+      }
+    }
+    
+    UserProfile updatedUser = addXp(user, event.xpAmount);
+    
+    // Update with streak and last active date
+    return updatedUser.copyWith(
+      streakDays: newStreakDays,
+      lastActiveDate: DateTime.now(),
+    );
   }
 
   /// Adds raw XP, handles level-ups, carries over overflow XP, and grants unlocks.

@@ -36,13 +36,14 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   void _loadMockData() {
-    _user = const UserProfile(
+    _user = UserProfile(
       id: 'usr_123',
       displayName: 'Alex',
       level: 1,
       currentXp: 40,
       xpToNextLevel: 100, // Based on new formula
       streakDays: 5,
+      lastActiveDate: DateTime.now().subtract(const Duration(days: 0)), // Today, to start streak
     );
 
     _tasks = [
@@ -159,12 +160,42 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   Widget _buildHeader() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Welcome back,', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-        const SizedBox(height: 4),
-        Text(_user.displayName, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Welcome back,', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+            const SizedBox(height: 4),
+            Text(_user.displayName, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          ],
+        ),
+        // Streak display
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withAlpha((0.04 * 255).round()), blurRadius: 12, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Text('🔥', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('Streak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                  Text('${_user.streakDays} days', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accent)),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
