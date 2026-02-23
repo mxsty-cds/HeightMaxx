@@ -8,6 +8,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'profile_setup_screen.dart';
+
 // Mock import for theme colors.
 // import '../theme/app_colors.dart';
 
@@ -114,8 +116,23 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   void _onStartGrowingPressed() {
     HapticFeedback.lightImpact();
-    // TODO: ensure '/dashboard' route is registered in MaterialApp
-    Navigator.of(context).pushNamed('/dashboard');
+    
+    // TODO: Fetch current user from your state manager (BLoC/Provider)
+    // final user = context.read<UserCubit>().state.user;
+    
+    // Example logic:
+    // if (user.hasCompletedProfile) {
+    //   Navigator.of(context).pushReplacementNamed('/dashboard');
+    // } else {
+    //   Navigator.of(context).pushReplacement(
+    //     MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+    //   );
+    // }
+    
+    // Temporary override for development:
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+    );
   }
 
   void _onLoginPressed() {

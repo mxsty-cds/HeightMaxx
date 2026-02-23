@@ -14,8 +14,9 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that the welcome screen displays the main text.
-    expect(find.text('Unlock Your\nPresence.'), findsOneWidget);
-    expect(find.text('Begin Journey'), findsOneWidget);
+    // Verify that the welcome screen displays the main elements.
+    expect(find.text('HeightMaxx'), findsOneWidget);
+    expect(find.text('Level up your posture & presence.'), findsOneWidget);
+    expect(find.text('Start Growing'), findsOneWidget);
   });
 }
