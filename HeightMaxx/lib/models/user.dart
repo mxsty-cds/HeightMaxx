@@ -9,6 +9,7 @@ import 'growth_profile.dart';
 class UserProfile {
   // Identity Fields
   final String id;
+  final String fullName;
   final String username;
   final String nickname;
   
@@ -33,10 +34,14 @@ class UserProfile {
   final HydrationLevel? hydrationLevel;
   final PostureLevel? postureLevel;
   final GrowthGoal? growthGoal;
+  final String? workoutFocus;
+  final int? workoutDaysPerWeek;
+  final int? workoutMinutesPerSession;
   final DateTime? profileCreatedAt;
 
   const UserProfile({
     required this.id,
+    this.fullName = 'Mover',
     required this.username,
     required this.nickname,
     this.level = 1,
@@ -58,6 +63,9 @@ class UserProfile {
     this.hydrationLevel,
     this.postureLevel,
     this.growthGoal,
+    this.workoutFocus,
+    this.workoutDaysPerWeek,
+    this.workoutMinutesPerSession,
     this.profileCreatedAt,
   });
 
@@ -86,6 +94,7 @@ class UserProfile {
 
   UserProfile copyWith({
     String? id,
+    String? fullName,
     String? username,
     String? nickname,
     int? level,
@@ -106,10 +115,14 @@ class UserProfile {
     HydrationLevel? hydrationLevel,
     PostureLevel? postureLevel,
     GrowthGoal? growthGoal,
+    String? workoutFocus,
+    int? workoutDaysPerWeek,
+    int? workoutMinutesPerSession,
     DateTime? profileCreatedAt,
   }) {
     return UserProfile(
       id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
       username: username ?? this.username,
       nickname: nickname ?? this.nickname,
       level: level ?? this.level,
@@ -130,6 +143,10 @@ class UserProfile {
       hydrationLevel: hydrationLevel ?? this.hydrationLevel,
       postureLevel: postureLevel ?? this.postureLevel,
       growthGoal: growthGoal ?? this.growthGoal,
+      workoutFocus: workoutFocus ?? this.workoutFocus,
+      workoutDaysPerWeek: workoutDaysPerWeek ?? this.workoutDaysPerWeek,
+      workoutMinutesPerSession:
+          workoutMinutesPerSession ?? this.workoutMinutesPerSession,
       profileCreatedAt: profileCreatedAt ?? this.profileCreatedAt,
     );
   }
@@ -137,6 +154,7 @@ class UserProfile {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'fullName': fullName,
       'username': username,
       'nickname': nickname,
       'level': level,
@@ -157,6 +175,9 @@ class UserProfile {
       'hydrationLevel': hydrationLevel?.name,
       'postureLevel': postureLevel?.name,
       'growthGoal': growthGoal?.name,
+      'workoutFocus': workoutFocus,
+      'workoutDaysPerWeek': workoutDaysPerWeek,
+      'workoutMinutesPerSession': workoutMinutesPerSession,
       'profileCreatedAt': profileCreatedAt?.toIso8601String(),
     };
   }
@@ -164,6 +185,7 @@ class UserProfile {
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
+      fullName: json['fullName'] as String? ?? 'Mover',
       username: json['username'] as String? ?? 'user_000',
       nickname: json['nickname'] as String? ?? 'SkyStretcher',
       level: json['level'] as int? ?? 1,
@@ -184,6 +206,9 @@ class UserProfile {
       hydrationLevel: HydrationLevel.values.byNameOrNull(json['hydrationLevel'] as String?),
       postureLevel: PostureLevel.values.byNameOrNull(json['postureLevel'] as String?),
       growthGoal: GrowthGoal.values.byNameOrNull(json['growthGoal'] as String?),
+      workoutFocus: json['workoutFocus'] as String?,
+      workoutDaysPerWeek: json['workoutDaysPerWeek'] as int?,
+      workoutMinutesPerSession: json['workoutMinutesPerSession'] as int?,
       profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(json['profileCreatedAt'] as String) : null,
     );
   }

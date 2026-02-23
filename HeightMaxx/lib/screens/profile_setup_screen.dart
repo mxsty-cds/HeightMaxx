@@ -19,6 +19,7 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   int _currentIndex = 0;
 
@@ -28,17 +29,36 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   int _heightCm = 170;
   final int _weightKg = 65;
   ActivityLevel? _activityLevel;
-  GrowthGoal? _growthGoal;
+  GrowthGoal? _growthGoal = GrowthGoal.both;
+  String _workoutFocus = 'mixed';
+  int _workoutDaysPerWeek = 4;
+  int _workoutMinutesPerSession = 20;
 
   @override
   void dispose() {
     _pageController.dispose();
+    _nameController.dispose();
     _nicknameController.dispose();
     super.dispose();
   }
 
   void _nextPage() {
     FocusScope.of(context).unfocus(); // Dismiss keyboard if open
+
+    if (_currentIndex == 0) {
+      if (_nameController.text.trim().isEmpty || _sex == null) {
+        _showValidation('Please enter your name and select your sex.');
+        return;
+      }
+    }
+
+    if (_currentIndex == 2) {
+      if (_activityLevel == null || _growthGoal == null) {
+        _showValidation('Please select activity level and growth goal.');
+        return;
+      }
+    }
+
     if (_currentIndex < 2) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
@@ -49,23 +69,42 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
+  void _showValidation(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   void _completeSetup() {
+    final rawName = _nameController.text.trim();
     final rawNickname = _nicknameController.text.trim();
 
-    final finalDisplayName = rawNickname.isNotEmpty ? rawNickname : 'Mover';
+    final finalName = rawName.isNotEmpty ? rawName : 'Mover';
+    final finalNickname = rawNickname.isNotEmpty ? rawNickname : finalName;
     final finalId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
+    final finalUsername = finalNickname
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '_');
 
     final newUser = UserProfile.fromJson({
       'id': finalId,
-      'displayName': finalDisplayName,
-      'username': finalDisplayName.toLowerCase().replaceAll(' ', '_'),
-      'nickname': finalDisplayName,
+      'fullName': finalName,
+      'username': finalUsername,
+      'nickname': finalNickname,
       'age': _age,
       'sex': _sex?.name,
       'heightCm': _heightCm.toDouble(),
       'weightKg': _weightKg.toDouble(),
       'activityLevel': _activityLevel?.name,
       'growthGoal': _growthGoal?.name,
+      'workoutFocus': _workoutFocus,
+      'workoutDaysPerWeek': _workoutDaysPerWeek,
+      'workoutMinutesPerSession': _workoutMinutesPerSession,
       'profileCreatedAt': DateTime.now().toIso8601String(),
     });
 
@@ -123,6 +162,25 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text('Full Name', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: 'e.g. Alex Carter',
+              hintStyle: TextStyle(color: AppColors.textMuted),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 24),
           const Text('What should we call you?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 12),
           TextField(
@@ -140,6 +198,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             ),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 24),
+          const Text('Sex', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: Sex.values
+                .map(
+                  (option) => ChoiceChip(
+                    label: Text(option.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
+                    selected: _sex == option,
+                    selectedColor: AppColors.accentLight,
+                    backgroundColor: AppColors.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    onSelected: (selected) => setState(() => _sex = selected ? option : null),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 40),
           const Text('Select Your Age', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -184,7 +262,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget _buildStep3Habits() {
     return _buildStepContainer(
       title: 'Habits & Goals',
-      subtitle: 'How do you move throughout the day?',
+      subtitle: 'Set your daily movement and workout routine specs.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -203,8 +281,73 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               onSelected: (selected) => setState(() => _activityLevel = selected ? a : null),
             )).toList(),
           ),
+          const SizedBox(height: 28),
+          const Text('Primary Goal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: GrowthGoal.values.map((goal) => ChoiceChip(
+              label: Text(goal.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
+              selected: _growthGoal == goal,
+              selectedColor: AppColors.accentLight,
+              backgroundColor: AppColors.surface,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              onSelected: (selected) => setState(() => _growthGoal = selected ? goal : null),
+            )).toList(),
+          ),
+          const SizedBox(height: 28),
+          const Text('Workout Focus', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildFocusChip('mobility', 'MOBILITY'),
+              _buildFocusChip('posture', 'POSTURE'),
+              _buildFocusChip('mixed', 'MIXED'),
+            ],
+          ),
+          const SizedBox(height: 28),
+          const Text('Workout Days Per Week', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
+          PremiumStepper(
+            value: _workoutDaysPerWeek,
+            minValue: 1,
+            maxValue: 7,
+            unit: 'Days',
+            onChanged: (val) => setState(() => _workoutDaysPerWeek = val),
+          ),
+          const SizedBox(height: 28),
+          const Text('Minutes Per Session', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
+          PremiumStepper(
+            value: _workoutMinutesPerSession,
+            minValue: 5,
+            maxValue: 90,
+            unit: 'Min',
+            onChanged: (val) => setState(() => _workoutMinutesPerSession = val),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFocusChip(String value, String label) {
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      selected: _workoutFocus == value,
+      selectedColor: AppColors.accentLight,
+      backgroundColor: AppColors.surface,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onSelected: (selected) {
+        if (!selected) {
+          return;
+        }
+        setState(() => _workoutFocus = value);
+      },
     );
   }
 
