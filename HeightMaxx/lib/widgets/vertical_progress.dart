@@ -92,11 +92,11 @@ class VerticalProgressBar extends StatelessWidget {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  AppColors.accent,
+                  AppColors.accentSecondary,
                   // Lighter shade at the top to simulate an upward glow
                   // Fallback: Colors.greenAccent
-                  Color.lerp(AppColors.accent, Colors.white, 0.15) ??
-                      AppColors.accent,
+                  Color.lerp(AppColors.accentPrimary, Colors.white, 0.15) ??
+                      AppColors.accentPrimary,
                 ],
               ),
             ),

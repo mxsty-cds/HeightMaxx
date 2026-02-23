@@ -118,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Vertical growth! +$amount XP.'),
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.accentPrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -233,7 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.accent,
+                      color: AppColors.accentPrimary,
                     ),
                   ),
                 ],
@@ -282,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
+                    color: AppColors.accentPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -293,7 +293,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.accentLight,
+                      color: AppColors.accentPrimary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -301,7 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.accentDark,
+                        color: AppColors.accentSecondary,
                       ),
                     ),
                   ),

@@ -116,15 +116,15 @@ class PremiumStepper extends StatelessWidget {
       child: InkWell(
         onTap: isEnabled ? onTap : null,
         customBorder: const CircleBorder(),
-        splashColor: AppColors.accent.withValues(alpha: 0.1),
-        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+        splashColor: AppColors.accentPrimary.withValues(alpha: 0.1),
+        highlightColor: AppColors.accentPrimary.withValues(alpha: 0.05),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Icon(
             icon,
             size: 28,
             color: isEnabled
-                ? AppColors.accent
+                ? AppColors.accentPrimary
                 : AppColors.textMuted.withValues(alpha: 0.5),
           ),
         ),

@@ -47,7 +47,7 @@ class GrowthMeter extends StatelessWidget {
                 width: width,
                 height: height * value,
                 decoration: const BoxDecoration(
-                  color: AppColors.accent,
+                  color: AppColors.accentPrimary,
                 ),
                 child: _buildSkyscraperSegments(height * value),
               );

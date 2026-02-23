@@ -28,7 +28,14 @@ class _HomePageScreenState extends State<HomePageScreen> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      const HomeScreen(),
+      HomeScreen(
+        user: widget.user,
+        onStartWorkout: () {
+          setState(() {
+            _currentIndex = 2;
+          });
+        },
+      ),
       DashboardScreen(user: widget.user),
       const WorkoutScreen(),
     ];

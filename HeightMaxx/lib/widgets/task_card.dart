@@ -35,7 +35,7 @@ class TaskCard extends StatelessWidget {
         // When completed, show a subtle accent border instead of a shadow
         border: isDone
             ? Border.all(
-                color: AppColors.accent.withAlpha((0.5 * 255).round()),
+                color: AppColors.accentPrimary.withAlpha((0.5 * 255).round()),
                 width: 1.5,
               )
             : null,
@@ -57,8 +57,8 @@ class TaskCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(_borderRadius),
-          splashColor: AppColors.accent.withAlpha((0.1 * 255).round()),
-          highlightColor: AppColors.accent.withAlpha((0.05 * 255).round()),
+          splashColor: AppColors.accentPrimary.withAlpha((0.1 * 255).round()),
+          highlightColor: AppColors.accentPrimary.withAlpha((0.05 * 255).round()),
           child: Padding(
             padding: _cardPadding,
             child: Column(
@@ -93,7 +93,7 @@ class TaskCard extends StatelessWidget {
                   color: AppColors.textPrimary,
                   // Subtle strikethrough if completed
                   decoration: isDone ? TextDecoration.lineThrough : null,
-                  decorationColor: AppColors.accent.withAlpha(
+                  decorationColor: AppColors.accentPrimary.withAlpha(
                     (0.5 * 255).round(),
                   ),
                   decorationThickness: 2.0,
@@ -126,8 +126,8 @@ class TaskCard extends StatelessWidget {
   Widget _buildXpBadge(BuildContext context, bool isDone) {
     // Slightly mute the accent color if the task is already completed
     final badgeColor = isDone
-        ? AppColors.accent.withAlpha((0.7 * 255).round())
-        : AppColors.accent;
+        ? AppColors.accentPrimary.withAlpha((0.7 * 255).round())
+        : AppColors.accentPrimary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -195,7 +195,7 @@ class TaskCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.check_circle_rounded,
-                color: AppColors.accent,
+                color: AppColors.accentPrimary,
                 size: _iconSize,
               ),
               const SizedBox(width: 6),
@@ -204,7 +204,7 @@ class TaskCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.accent,
+                  color: AppColors.accentPrimary,
                 ),
               ),
             ],

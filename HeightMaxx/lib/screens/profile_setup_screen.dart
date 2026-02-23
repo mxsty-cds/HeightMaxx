@@ -148,7 +148,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       child: LinearProgressIndicator(
         value: (_currentIndex + 1) / 3,
         backgroundColor: AppColors.subtleBackground,
-        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+        valueColor: const AlwaysStoppedAnimation<Color>(
+          AppColors.accentPrimary,
+        ),
         borderRadius: BorderRadius.circular(8),
         minHeight: 6,
       ),
@@ -210,7 +212,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   (option) => ChoiceChip(
                     label: Text(option.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
                     selected: _sex == option,
-                    selectedColor: AppColors.accentLight,
+                    selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
                     backgroundColor: AppColors.surface,
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -274,7 +276,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: ActivityLevel.values.map((a) => ChoiceChip(
               label: Text(a.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
               selected: _activityLevel == a,
-              selectedColor: AppColors.accentLight,
+              selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
               backgroundColor: AppColors.surface,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -290,7 +292,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: GrowthGoal.values.map((goal) => ChoiceChip(
               label: Text(goal.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
               selected: _growthGoal == goal,
-              selectedColor: AppColors.accentLight,
+              selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
               backgroundColor: AppColors.surface,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -338,7 +340,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return ChoiceChip(
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
       selected: _workoutFocus == value,
-      selectedColor: AppColors.accentLight,
+      selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
       backgroundColor: AppColors.surface,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -372,10 +374,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       padding: const EdgeInsets.all(32.0),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.accentPrimary,
           foregroundColor: Colors.white,
           elevation: 8,
-          shadowColor: AppColors.accent.withValues(alpha: 0.4),
+          shadowColor: AppColors.accentPrimary.withValues(alpha: 0.4),
           minimumSize: const Size(double.infinity, 56),
           padding: const EdgeInsets.symmetric(vertical: 20),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

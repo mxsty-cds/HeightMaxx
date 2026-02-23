@@ -1,7 +1,7 @@
 // lib/screens/workout_player_screen.dart
 //
-// The active playback interface for exercises.
-// Features a massive timer, clear typography, and auto-managing state.
+// Stripped-down playback interface. The timer subtly pulses every second
+// it ticks down, maintaining focus without being distracting.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -27,6 +27,9 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   late int _currentIndex;
   late int _remainingSeconds;
   Timer? _timer;
+  
+  // Controls the subtle pulsing animation of the timer text
+  bool _pulseState = false;
 
   Exercise get _currentExercise => widget.exercises[_currentIndex];
   bool get _isLastExercise => _currentIndex == widget.exercises.length - 1;
@@ -45,10 +48,11 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       if (_remainingSeconds > 0) {
         setState(() {
           _remainingSeconds--;
+          _pulseState = !_pulseState; // Toggle pulse state every tick
         });
       } else {
         _timer?.cancel();
-        HapticFeedback.heavyImpact(); // Alert user that time is up
+        HapticFeedback.heavyImpact(); 
       }
     });
   }
@@ -56,13 +60,12 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   void _handleNext() {
     HapticFeedback.lightImpact();
     if (_isLastExercise) {
-      // Finished the routine
       Navigator.of(context).pop();
     } else {
-      // Advance to next exercise
       setState(() {
         _currentIndex++;
         _remainingSeconds = _currentExercise.durationSeconds;
+        _pulseState = false;
       });
       _startTimer();
     }
@@ -74,7 +77,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     super.dispose();
   }
 
-  // Helper to format seconds into MM:SS
   String get _formattedTime {
     final minutes = (_remainingSeconds / 60).floor().toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
@@ -96,83 +98,65 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Exercise Name
               Text(
                 _currentExercise.name,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.0,
-                  color: AppColors.textPrimary,
-                ),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 40),
 
-              // Animation Placeholder
               Expanded(
                 flex: 3,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.subtleBackground,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: AppColors.surface, width: 4),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.accentSecondary.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10)),
+                    ],
                   ),
-                  child: const Center(
+                  child: Center(
+                    child: Icon(Icons.fitness_center_rounded, size: 64, color: AppColors.accentPrimary.withValues(alpha: 0.3)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+
+              Expanded(
+                flex: 2,
+                child: Center(
+                  // Micro-interaction: Timer pulses slightly on each tick
+                  child: AnimatedScale(
+                    scale: _pulseState ? 1.05 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
                     child: Text(
-                      'Animation\nPlaceholder',
-                      textAlign: TextAlign.center,
+                      _formattedTime,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMuted,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontSize: 88,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -2.0,
+                        color: _remainingSeconds == 0 ? AppColors.accentPrimary : AppColors.textPrimary,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
 
-              // Timer Display
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: Text(
-                    _formattedTime,
-                    style: TextStyle(
-                      // Monospaced features help stop text jitter as seconds tick
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      fontSize: 80,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -2.0,
-                      color: _remainingSeconds == 0 
-                          ? AppColors.success 
-                          : AppColors.accent,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Next / Finish Button
               ElevatedButton(
                 onPressed: _handleNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.textPrimary,
                   foregroundColor: AppColors.surface,
+                  padding: const EdgeInsets.symmetric(vertical: 22),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   elevation: 8,
                   shadowColor: AppColors.textPrimary.withValues(alpha: 0.3),
-                  padding: const EdgeInsets.symmetric(vertical: 22),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
                 ),
                 child: Text(
                   _isLastExercise ? 'Finish Routine' : 'Next Exercise',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
               ),
               const SizedBox(height: 16),
