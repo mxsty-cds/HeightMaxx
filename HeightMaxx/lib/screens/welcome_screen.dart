@@ -1,41 +1,223 @@
-// lib/screens/welcome_screen.dart
-//
-// The entry point. Features a glowing hero element and staggered,
-// upward-sliding entrance animations to reinforce "vertical growth."
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../theme/app_colors.dart';
-import 'homepage_screen.dart';
 import 'profile_setup_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({Key? key}) : super(key: key);
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeAnim;
-  late final Animation<Offset> _slideAnim;
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  // Данные на английском, согласно твоему плану (5 слайдов)
+  final List<Map<String, dynamic>> splashData = [
+    {
+      "title": "Unlock Your Maximum Height",
+      "text": "Scientifically designed routines to maximize your growth potential.",
+      // Пока используем иконку, потом заменим на картинку "image": "assets/images/slide1.png"
+      "icon": Icons.accessibility_new_rounded,
+    },
+    {
+      "title": "AI Personalized Plan",
+      "text": "Custom workouts built specifically for your body type and goals.",
+      "icon": Icons.psychology_rounded,
+    },
+    {
+      "title": "Track Your Progress",
+      "text": "See your improvements and celebrate every millimeter grown.",
+      "icon": Icons.show_chart_rounded,
+    },
+    {
+      "title": "Join Global Leaderboard",
+      "text": "Compete with others and stay motivated on your journey.",
+      "icon": Icons.emoji_events_rounded,
+    },
+    {
+      // Последний слайд - призыв к действию
+      "title": "Ready to Grow?",
+      "text": "Let's build your perfect posture and start increasing your height today!",
+      "icon": Icons.rocket_launch_rounded,
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    // Используем светлый фон в стиле Bento UI
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              flex: 4, // Увеличили место для контента
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (value) {
+                  setState(() {
+                    _currentPage = value;
+                  });
+                },
+                itemCount: splashData.length,
+                itemBuilder: (context, index) => SplashContent(
+                  title: splashData[index]["title"]!,
+                  text: splashData[index]["text"]!,
+                  iconData: splashData[index]["icon"],
+                  // Передаем индекс, чтобы анимировать только активную страницу
+                  isActive: _currentPage == index,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                child: Column(
+                  children: <Widget>[
+                    const Spacer(),
+                    // Индикаторы (точки)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        splashData.length,
+                            (index) => buildDot(index: index),
+                      ),
+                    ),
+                    const Spacer(flex: 2),
+                    // Анимированная Кнопка
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: _currentPage == splashData.length - 1
+                          ? _buildGetStartedButton()
+                          : _buildNextButton(),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGetStartedButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        key: const ValueKey("GetStartedBtn"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2DCCA7),
+          elevation: 8,
+          shadowColor: const Color(0xFF2DCCA7).withOpacity(0.4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        onPressed: () {
+          // ВОТ ТУТ МЕНЯЕМ КОД:
+          // Осуществляем плавный переход на экран ProfileSetupScreen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const ProfileSetupScreen(),
+            ),
+          );
+        },
+        child: const Text(
+          "Get Started",
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Простая кнопка "Next" для остальных слайдов
+  Widget _buildNextButton() {
+    return SizedBox(
+      key: const ValueKey("NextBtn"),
+      width: double.infinity,
+      height: 56,
+      child: TextButton(
+        onPressed: () {
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutQuart,
+          );
+        },
+        child: const Text(
+          "Next",
+          style: TextStyle(
+            fontSize: 18,
+            color: Color(0xFF7B8BB2), // Мягкий серый цвет
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Виджет для точек внизу экрана с улучшенной анимацией
+  Widget buildDot({required int index}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(right: 8),
+      height: 8,
+      // Активная точка длиннее
+      width: _currentPage == index ? 28 : 8,
+      decoration: BoxDecoration(
+        // Активная - сине-зеленая, неактивные - светло-серые
+        color: _currentPage == index
+            ? const Color(0xFF2DCCA7)
+            : const Color(0xFFD8DCE8),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
+// --- Виджет Контента Слайда с Анимациями ---
+class SplashContent extends StatefulWidget {
+  final String title;
+  final String text;
+  final IconData iconData;
+  final bool isActive;
+
+  const SplashContent({
+    Key? key,
+    required this.title,
+    required this.text,
+    required this.iconData,
+    required this.isActive,
+  }) : super(key: key);
+
+  @override
+  State<SplashContent> createState() => _SplashContentState();
+}
+
+// Используем TickerProvider для анимации
+class _SplashContentState extends State<SplashContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    // Контроллер для плавающей анимации (вверх-вниз)
     _controller = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-
-    // Smooth ease-out for a premium, non-bouncy feel
-    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-
-    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(curve);
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(curve);
-
-    _controller.forward();
+    )
+      ..repeat(reverse: true); // Повторять туда-сюда бесконечно
   }
 
   @override
@@ -44,155 +226,74 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  void _onStartGrowingPressed() {
-    HapticFeedback.heavyImpact();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: SlideTransition(
-            position: _slideAnim,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Spacer(flex: 2),
-                  _buildHeroLogo(),
-                  const SizedBox(height: 48),
-                  _buildTypography(),
-                  const Spacer(flex: 3),
-                  _buildPrimaryCTA(),
-                  const SizedBox(height: 16),
-                  _buildSecondaryCTA(),
-                  const SizedBox(height: 32),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Spacer(flex: 2),
+          // --- Плавающая Анимация Иконки ---
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              // Двигаем иконку вверх-вниз на 15 пикселей
+              return Transform.translate(
+                offset: Offset(0, 15 * _controller.value - 7.5),
+                child: child,
+              );
+            },
+            child: Container(
+              height: 200,
+              width: 200,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                // Мягкая тень в стиле Bento UI
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2DCCA7).withOpacity(0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
                 ],
+              ),
+              // Пока иконка, потом заменишь на Image.asset(...)
+              child: Icon(
+                widget.iconData,
+                size: 100,
+                color: const Color(0xFF2DCCA7),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroLogo() {
-    return Center(
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: AppColors.primaryGradient,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.accentGlow,
-              blurRadius: 40,
-              offset: const Offset(0, 20),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            'H',
-            style: TextStyle(
-              fontSize: 72,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: -2,
+          const Spacer(flex: 2),
+          // --- Текстовый блок ---
+          // (Здесь можно добавить анимацию появления, но для начала хватит и плавающей иконки)
+          Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 26,
+              // Если подключишь google_fonts: GoogleFonts.poppins(...)
+              color: Color(0xFF2C3A58),
+              // Темно-синий цвет текста
+              fontWeight: FontWeight.w800,
+              height: 1.2,
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypography() {
-    return Column(
-      children: [
-        const Text(
-          'HeightMaxx',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.5,
-            color: AppColors.textPrimary,
-            height: 1.1,
+          const SizedBox(height: 16),
+          Text(
+            widget.text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Color(0xFF7B8BB2), // Мягкий серый
+              height: 1.5,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Unlock your vertical potential.\nBuild the habit of perfect posture.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary.withValues(alpha: 0.8),
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrimaryCTA() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentGlow,
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
+          const Spacer(flex: 1),
         ],
-      ),
-      child: ElevatedButton(
-        onPressed: _onStartGrowingPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent, // Let Ink/Gradient show
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        ).copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.accentPrimary),
-        ),
-        child: const Text(
-          'Start Growing',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary, // High contrast dark text on cyan
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSecondaryCTA() {
-    return TextButton(
-      onPressed: () {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomePageScreen()),
-        );
-      },
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.textSecondary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: const Text(
-        'I already have an account',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     );
   }
