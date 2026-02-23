@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/user_factors.dart';
-import '../screens/dashboard_screen.dart';
+import '../screens/homepage_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/premium_stepper.dart';
 
@@ -70,7 +70,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     });
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => DashboardScreen(user: newUser)),
+      MaterialPageRoute(
+        builder: (_) => HomePageScreen(user: newUser, initialIndex: 1),
+      ),
     );
   }
 

@@ -50,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           'streakDays': 5,
         });
 
-    _tasks = const [
+    _tasks = [
       HeightTask(
         id: 't1',
         title: 'Morning Stretch Flow',

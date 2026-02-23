@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
+import 'homepage_screen.dart';
 import 'profile_setup_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -195,7 +196,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
         const SizedBox(height: 16),
         // Demoted Secondary Action
         TextButton(
-          onPressed: () {}, // TODO: Login route
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomePageScreen()),
+            );
+          },
           style: TextButton.styleFrom(
             foregroundColor: AppColors.textMuted,
             padding: const EdgeInsets.symmetric(vertical: 16),

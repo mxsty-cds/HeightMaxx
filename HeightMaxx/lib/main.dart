@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/welcome_screen.dart';
+import 'screens/homepage_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'HeightMaxx',
       theme: ThemeData(useMaterial3: true),
-      home: const WelcomeScreen(),
+      home: const HomePageScreen(),
     );
   }
 }

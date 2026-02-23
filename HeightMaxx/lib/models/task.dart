@@ -5,6 +5,8 @@
 /// ensuring UI state remains predictable and testable.
 library;
 
+const Object _unset = Object();
+
 class HeightTask {
   final String id;
   final String title;
@@ -59,18 +61,9 @@ class HeightTask {
   /// Resets the task to an incomplete state.
   /// Returns a new instance with the completion data cleared.
   HeightTask resetCompletion() {
-    // We instantiate directly here rather than using copyWith, 
-    // to explicitly force [completedAt] to null.
-    return HeightTask(
-      id: id,
-      title: title,
-      description: description,
-      xpReward: xpReward,
+    return copyWith(
       isCompleted: false,
-      category: category,
-      estimatedMinutes: estimatedMinutes,
-      scheduledFor: scheduledFor,
-      completedAt: null, 
+      completedAt: null,
     );
   }
 
@@ -85,7 +78,7 @@ class HeightTask {
     String? category,
     int? estimatedMinutes,
     DateTime? scheduledFor,
-    DateTime? completedAt,
+    Object? completedAt = _unset,
   }) {
     return HeightTask(
       id: id ?? this.id,
@@ -96,7 +89,9 @@ class HeightTask {
       category: category ?? this.category,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
       scheduledFor: scheduledFor ?? this.scheduledFor,
-      completedAt: completedAt ?? this.completedAt,
+      completedAt: identical(completedAt, _unset)
+          ? this.completedAt
+          : completedAt as DateTime?,
     );
   }
 
