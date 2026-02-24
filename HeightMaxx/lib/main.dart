@@ -1,17 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _initializeFirebase();
+  unawaited(_initializeFirebase());
   runApp(const MyApp());
 }
 
 Future<void> _initializeFirebase() async {
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
     debugPrint('Firebase initialized successfully');
+  } on TimeoutException {
+    debugPrint('Firebase initialization timed out. Continuing without Firebase for now.');
   } catch (error, stackTrace) {
     debugPrint('Firebase initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);

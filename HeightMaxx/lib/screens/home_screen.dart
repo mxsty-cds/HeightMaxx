@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../models/user.dart';
 import '../theme/app_colors.dart';
 
@@ -13,47 +14,32 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  // Данные для календаря
+class _HomeScreenState extends State<HomeScreen> {
   final DateTime _today = DateTime.now();
-  int _selectedDayIndex = 0; // Сегодняшний день по умолчанию
+  int _selectedDayIndex = 0;
 
-  // Состояние привычек
   final int _waterDrank = 1200;
   final int _waterGoal = 2500;
   final double _sleepHours = 7.5;
   final int _streak = 12;
 
-  late AnimationController _mainController;
-
   @override
   void initState() {
     super.initState();
-    _selectedDayIndex = _today.weekday - 1; // Установка текущего дня
-    _mainController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..forward();
+    _selectedDayIndex = _today.weekday - 1;
   }
 
-  @override
-  void dispose() {
-    _mainController.dispose();
-    super.dispose();
-  }
-
-  // Вспомогательная функция для эффекта появления с задержкой
   Widget _appearAnimation({required Widget child, required int index}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 400 + (index * 150)),
       curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
+      builder: (context, value, animatedChild) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
             offset: Offset(0, 30 * (1 - value)),
-            child: child,
+            child: animatedChild,
           ),
         );
       },
@@ -96,75 +82,67 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // --- 1. Горизонтальный Календарь ---
   Widget _buildWeeklyCalendar() {
-    final List<String> weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 90,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: 7,
-            itemBuilder: (context, index) {
-              bool isSelected = index == _selectedDayIndex;
-              return GestureDetector(
-                onTap: () {
-                  setState(() => _selectedDayIndex = index);
-                  HapticFeedback.lightImpact();
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: 60,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accentPrimary : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: isSelected
-                        ? [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
-                        : [],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        weekDays[index],
-                        style: TextStyle(
-                          color: isSelected ? Colors.white70 : AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "${index + 20}", // Моковые даты
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (isSelected)
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          width: 4,
-                          height: 4,
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        )
-                    ],
-                  ),
-                ),
-              );
+    final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return SizedBox(
+      height: 90,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: 7,
+        itemBuilder: (context, index) {
+          final isSelected = index == _selectedDayIndex;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedDayIndex = index);
+              HapticFeedback.lightImpact();
             },
-          ),
-        ),
-      ],
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 60,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.accentPrimary : AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accentPrimary.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    weekDays[index],
+                    style: TextStyle(
+                      color: isSelected ? Colors.white70 : AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${index + 20}',
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  // --- 2. Мини-график активности (Новое) ---
   Widget _buildActivityChart() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -178,7 +156,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Weekly Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const Text(
+                'Weekly Activity',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
               Icon(Icons.insights, color: AppColors.accentPrimary.withValues(alpha: 0.5)),
             ],
           ),
@@ -187,7 +168,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: List.generate(7, (index) {
-              double barHeight = [40.0, 70.0, 50.0, 90.0, 60.0, 80.0, 30.0][index];
+              const bars = [40.0, 70.0, 50.0, 90.0, 60.0, 80.0, 30.0];
+              final barHeight = bars[index];
               return Column(
                 children: [
                   AnimatedContainer(
@@ -201,17 +183,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(["M", "T", "W", "T", "F", "S", "S"][index], style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                  Text(
+                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                  ),
                 ],
               );
             }),
-          )
+          ),
         ],
       ),
     );
   }
 
-  // --- Вспомогательные элементы ---
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
@@ -236,15 +220,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // (Остальные методы: _buildHeightProgressCard, _buildMainWorkoutCard, _buildBentoHabitsGrid, _buildAIInsightCard остаются из прошлой версии, но теперь они обернуты в _appearAnimation)
-
   Widget _buildHeightProgressCard() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentPrimary.withValues(alpha: 0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -277,11 +265,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(color: AppColors.accentPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-      child: Row(children: [
-        const Text('🔥', style: TextStyle(fontSize: 14)),
-        const SizedBox(width: 4),
-        Text('$_streak Days', style: const TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800)),
-      ]),
+      child: Row(
+        children: [
+          const Text('🔥', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 4),
+          Text('$_streak Days', style: const TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800)),
+        ],
+      ),
     );
   }
 
@@ -297,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: [const BoxShadow(color: AppColors.accentGlow, blurRadius: 10)],
+            boxShadow: const [BoxShadow(color: AppColors.accentGlow, blurRadius: 10)],
           ),
         ),
       ),
@@ -309,18 +299,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: AppColors.accentGlow.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentGlow.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: widget.onStartWorkout,
           borderRadius: BorderRadius.circular(32),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          child: const Padding(
+            padding: EdgeInsets.all(24),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -330,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-                const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 50),
+                Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 50),
               ],
             ),
           ),
@@ -342,37 +338,78 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildBentoHabitsGrid() {
     return Row(
       children: [
-        Expanded(child: _buildBentoCard(color: const Color(0xFFE3F2FD), icon: Icons.water_drop, iconColor: Colors.blue, title: 'Hydration', value: '$_waterDrank ml', progress: _waterDrank / _waterGoal)),
+        Expanded(
+          child: _buildBentoCard(
+            icon: Icons.water_drop,
+            iconColor: Colors.blue,
+            title: 'Hydration',
+            value: '$_waterDrank ml',
+            progress: _waterDrank / _waterGoal,
+          ),
+        ),
         const SizedBox(width: 16),
-        Expanded(child: _buildBentoCard(color: const Color(0xFFF3E5F5), icon: Icons.nightlight_round, iconColor: Colors.purple, title: 'Sleep', value: '$_sleepHours h', progress: _sleepHours / 9)),
+        Expanded(
+          child: _buildBentoCard(
+            icon: Icons.nightlight_round,
+            iconColor: Colors.purple,
+            title: 'Sleep',
+            value: '$_sleepHours h',
+            progress: _sleepHours / 9,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildBentoCard({required Color color, required IconData icon, required Color iconColor, required String title, required String value, required double progress}) {
+  Widget _buildBentoCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required double progress,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(28)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: iconColor, size: 24),
-        const SizedBox(height: 12),
-        Text(title, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
-        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 4),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 4),
+        ],
+      ),
     );
   }
 
   Widget _buildAIInsightCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.1))),
-      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.auto_awesome, color: AppColors.accentPrimary, size: 18), SizedBox(width: 8), Text('AI INSIGHT', style: TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800, fontSize: 10))]),
-        SizedBox(height: 8),
-        Text("Your spine hydration is optimal today. Excellent job on your 12-day streak!", style: TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.4)),
-      ]),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.1)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: AppColors.accentPrimary, size: 18),
+              SizedBox(width: 8),
+              Text('AI INSIGHT', style: TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800, fontSize: 10)),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Your spine hydration is optimal today. Excellent job on your consistency streak!',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.4),
+          ),
+        ],
+      ),
     );
   }
 }

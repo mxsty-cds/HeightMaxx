@@ -25,7 +25,7 @@ class UserProfile {
   final List<String> unlockedThemeIds;
   final List<String> unlockedAvatarTierIds;
   final List<String> unlockedWorkoutTierIds;
-
+  final String? avatarPath;
   // Biometric & Habit Fields
   final int? age;
   final Sex? sex;
@@ -71,6 +71,7 @@ class UserProfile {
     this.workoutDaysPerWeek,
     this.workoutMinutesPerSession,
     this.profileCreatedAt,
+    this.avatarPath,
   });
 
   /// Hook to calculate derived metrics if sufficient biometric data exists.
@@ -125,6 +126,7 @@ class UserProfile {
     int? workoutDaysPerWeek,
     int? workoutMinutesPerSession,
     DateTime? profileCreatedAt,
+    String? avatarPath,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -137,8 +139,8 @@ class UserProfile {
       streakDays: streakDays ?? this.streakDays,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       totalXpEarned: totalXpEarned ?? this.totalXpEarned,
-        totalGrowthCm: totalGrowthCm ?? this.totalGrowthCm,
-        totalWorkoutsCompleted:
+      totalGrowthCm: totalGrowthCm ?? this.totalGrowthCm,
+      totalWorkoutsCompleted:
           totalWorkoutsCompleted ?? this.totalWorkoutsCompleted,
       unlockedThemeIds: unlockedThemeIds ?? this.unlockedThemeIds,
       unlockedAvatarTierIds: unlockedAvatarTierIds ?? this.unlockedAvatarTierIds,
@@ -157,6 +159,7 @@ class UserProfile {
       workoutMinutesPerSession:
           workoutMinutesPerSession ?? this.workoutMinutesPerSession,
       profileCreatedAt: profileCreatedAt ?? this.profileCreatedAt,
+      avatarPath: avatarPath ?? this.avatarPath,
     );
   }
 
@@ -190,9 +193,10 @@ class UserProfile {
       'workoutDaysPerWeek': workoutDaysPerWeek,
       'workoutMinutesPerSession': workoutMinutesPerSession,
       'profileCreatedAt': profileCreatedAt?.toIso8601String(),
+      'avatarPath': avatarPath,
     };
   }
-
+  
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
@@ -223,6 +227,7 @@ class UserProfile {
       workoutDaysPerWeek: json['workoutDaysPerWeek'] as int?,
       workoutMinutesPerSession: json['workoutMinutesPerSession'] as int?,
       profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(json['profileCreatedAt'] as String) : null,
+      avatarPath: json['avatarPath'] as String?,
     );
   }
 }
