@@ -1,339 +1,257 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 
-import '../models/task.dart';
+// Твои импорты
 import '../models/user.dart';
-import '../models/xp_engine.dart';
-import '../models/xp_event.dart';
 import '../theme/app_colors.dart';
-import '../widgets/growth_meter.dart';
-import '../widgets/task_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, this.user});
-
   final UserProfile? user;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
-  late UserProfile _user;
-  late List<HeightTask> _tasks;
-
-  final XpEngine _xpEngine = XpEngine();
-
-  late final AnimationController _animController;
-  late final Animation<double> _fadeAnim;
-  late final Animation<Offset> _slideAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-    _setupAnimations();
-  }
-
-  void _loadData() {
-    _user =
-        widget.user ??
-        UserProfile.fromJson({
-          'id': 'usr_123',
-          'displayName': 'Alex',
-          'username': 'alex_123',
-          'nickname': 'Alex',
-          'level': 1,
-          'currentXp': 40,
-          'xpToNextLevel': 100,
-          'streakDays': 5,
-        });
-
-    _tasks = [
-      HeightTask(
-        id: 't1',
-        title: 'Morning Stretch Flow',
-        xpReward: 40,
-        category: 'Mobility',
-      ),
-      HeightTask(
-        id: 't2',
-        title: 'Posture Reset',
-        xpReward: 30,
-        category: 'Posture',
-      ),
-    ];
-  }
-
-  void _setupAnimations() {
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  void _handleTaskTap(int index) {
-    HapticFeedback.lightImpact();
-    setState(() {
-      final task = _tasks[index];
-      if (task.isCompleted) {
-        return;
-      }
-
-      _tasks[index] = task.complete();
-
-      final event = XpEvent(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: XpActionType.taskCompletion,
-        xpAmount: task.xpReward,
-        createdAt: DateTime.now(),
-      );
-
-      final previousLevel = _user.level;
-      _user = _xpEngine.applyEvent(_user, event);
-
-      if (_user.level > previousLevel) {
-        _showLevelUpDialog(_user.level);
-      } else {
-        _showXpToast(task.xpReward);
-      }
-    });
-  }
-
-  void _showXpToast(int amount) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Vertical growth! +$amount XP.'),
-        backgroundColor: AppColors.accentPrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showLevelUpDialog(int newLevel) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Level Up! 🏢'),
-        content: Text('You reached Level $newLevel. Keep climbing.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
+class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+  int _selectedChartIndex = 4; // Выбранный день на графике (Пятница)
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: SlideTransition(
-            position: _slideAnim,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildModernHeader(),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  _buildAnalyticsSection(), // ГРАФИК ТУТ
                   const SizedBox(height: 32),
-                  _buildLevelSection(),
-                  const SizedBox(height: 40),
-                  _buildTasksSection(),
+                  _buildSkillTree(), // ДРЕВО НАВЫКОВ
+                  const SizedBox(height: 32),
+                  _buildBentoSocialSection(), // СОЦИАЛКА И РЕЙТИНГ
+                  const SizedBox(height: 32),
+                  _buildSectionHeader("Active Missions"),
+                  const SizedBox(height: 16),
+                  _buildMissionList(),
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    final userJson = _user.toJson();
-    final nickname = (userJson['nickname'] as String?)?.trim() ?? '';
-    final displayName = (userJson['displayName'] as String?)?.trim() ?? '';
-    final greetingName = nickname.isNotEmpty
-        ? nickname
-        : (displayName.isNotEmpty ? displayName : 'Mover');
+  // --- 1. КРУТОЙ ГРАФИК АНАЛИТИКИ ---
+  Widget _buildAnalyticsSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("XP Analytics", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              _buildMultiplierBadge(),
+            ],
+          ),
+          const SizedBox(height: 30),
+          _buildBarChart(),
+          const SizedBox(height: 20),
+          const Center(
+            child: Text("You earned 450 XP this week. Top 5%!",
+                style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarChart() {
+    final List<double> data = [0.3, 0.5, 0.8, 0.4, 0.9, 0.6, 0.7];
+    final List<String> days = ["M", "T", "W", "T", "F", "S", "S"];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Welcome back,',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              greetingName,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha((0.04 * 255).round()),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: List.generate(data.length, (index) {
+        bool isSelected = index == _selectedChartIndex;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedChartIndex = index),
+          child: Column(
             children: [
-              const Text('🔥', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Streak',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    '${_user.streakDays} days',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.accentPrimary,
-                    ),
-                  ),
-                ],
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: 120 * data[index],
+                width: 34,
+                decoration: BoxDecoration(
+                  gradient: isSelected ? AppColors.primaryGradient : null,
+                  color: isSelected ? null : AppColors.subtleBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected ? [BoxShadow(color: AppColors.accentGlow, blurRadius: 8)] : [],
+                ),
+                child: isSelected ? const Center(child: Icon(Icons.bolt, color: Colors.white, size: 16)) : null,
               ),
+              const SizedBox(height: 12),
+              Text(days[index], style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+              )),
             ],
           ),
-        ),
-      ],
+        );
+      }),
     );
   }
 
-  Widget _buildLevelSection() {
-    final nextUnlock = _xpEngine.getNextUnlockHint(_user.level);
-
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.04 * 255).round()),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Level ${_user.level}',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_user.currentXp} / ${_user.xpToNextLevel} XP',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accentPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (nextUnlock != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentPrimary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Next: ${nextUnlock.name} at Lvl ${nextUnlock.unlockLevel}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accentSecondary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          GrowthMeter(progress: _user.progressToNextLevel),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTasksSection() {
+  // --- 2. SKILL TREE (НОВАЯ ФИЧА) ---
+  Widget _buildSkillTree() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Today\'s Growth Missions',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+        _buildSectionHeader("Skill Unlocks"),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _buildSkillItem("Flexibility", Icons.accessibility_new, 0.8, Colors.green),
+              _buildSkillItem("Core Power", Icons.fitness_center, 0.4, Colors.blue),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        ...List.generate(_tasks.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: TaskCard(task: _tasks[index], onTap: () => _handleTaskTap(index)),
-          );
-        }),
       ],
     );
+  }
+
+  Widget _buildSkillItem(String title, IconData icon, double progress, Color color) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+            ],
+          ),
+          const Spacer(),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: AppColors.subtleBackground,
+            color: color,
+            borderRadius: BorderRadius.circular(10),
+            minHeight: 6,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 3. СОЦИАЛКА (BENTO GRID) ---
+  Widget _buildBentoSocialSection() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            height: 160,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.black, Colors.grey.shade900]),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Leaderboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                const Spacer(),
+                _buildFriendRow("Diyor", "1st", "🔥"),
+                const SizedBox(height: 8),
+                _buildFriendRow("Alex", "2nd", "💪"),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 1,
+          child: Container(
+            height: 160,
+            decoration: BoxDecoration(color: AppColors.accentPrimary, borderRadius: BorderRadius.circular(32)),
+            child: const Center(child: Icon(Icons.share_rounded, color: Colors.white, size: 40)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- ХЕЛПЕРЫ ---
+
+  Widget _buildModernHeader() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      pinned: true,
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: const Text("Dashboard", style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900)),
+      ),
+    );
+  }
+
+  Widget _buildMultiplierBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+      child: const Text("x1.5 Multiplier 🔥", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w800, fontSize: 12)),
+    );
+  }
+
+  Widget _buildFriendRow(String name, String rank, String emoji) {
+    return Row(
+      children: [
+        CircleAvatar(radius: 12, backgroundColor: Colors.white24, child: Text(emoji, style: const TextStyle(fontSize: 10))),
+        const SizedBox(width: 8),
+        Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        const Spacer(),
+        Text(rank, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5));
+  }
+
+  Widget _buildMissionList() {
+    // Здесь твои TaskCard из предыдущего кода
+    return const Center(child: Text("Missions will load here...", style: TextStyle(color: AppColors.textSecondary)));
   }
 }

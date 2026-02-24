@@ -1,7 +1,3 @@
-// lib/screens/workout_screen.dart
-//
-// Features animated list cards with glowing accents upon opening.
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
@@ -32,57 +28,106 @@ class WorkoutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildAnimatedList()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Workout', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary)),
-          SizedBox(height: 8),
-          Text('List of exercises', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              _buildSliverHeader(),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+                sliver: _buildAnimatedSliverList(),
+              ),
+            ],
+          ),
+          _buildStickyStartButton(context),
         ],
       ),
     );
   }
 
-  Widget _buildAnimatedList() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          itemCount: _routine.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            // Slight stagger effect using math
-            final delayOffset = (index * 0.1).clamp(0.0, 1.0);
-            final itemOpacity = ((value - delayOffset) / (1 - delayOffset)).clamp(0.0, 1.0);
-            
-            return Opacity(
-              opacity: itemOpacity,
-              child: Transform.translate(
-                offset: Offset(0, 30 * (1 - itemOpacity)),
-                child: _buildExerciseCard(context, _routine[index], index),
+  // --- 1. ПРЕМИАЛЬНАЯ ШАПКА ---
+  Widget _buildSliverHeader() {
+    return SliverAppBar(
+      expandedHeight: 240,
+      collapsedHeight: 80,
+      pinned: true,
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.accentPrimary.withOpacity(0.05), AppColors.background],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Daily\nRoutine', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.textPrimary, height: 1.1)),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _buildStatChip(Icons.timer_outlined, '~4 min'),
+                  const SizedBox(width: 12),
+                  _buildStatChip(Icons.bolt_rounded, '120 XP'),
+                  const SizedBox(width: 12),
+                  _buildStatChip(Icons.fitness_center_rounded, 'Medium'),
+                ],
               ),
-            );
-          },
-        );
-      },
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.subtleBackground),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.accentSecondary),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  // --- 2. УЛУЧШЕННЫЙ СПИСОК С АНИМАЦИЕЙ ---
+  Widget _buildAnimatedSliverList() {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+            (context, index) {
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 400 + (index * 100)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 30 * (1 - value)),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildExerciseCard(context, _routine[index], index),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+        childCount: _routine.length,
+      ),
     );
   }
 
@@ -90,41 +135,107 @@ class WorkoutScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: AppColors.accentSecondary.withValues(alpha: 0.05), blurRadius: 16, offset: const Offset(0, 6))],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
-        type: MaterialType.transparency,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          splashColor: AppColors.accentPrimary.withValues(alpha: 0.1),
-          highlightColor: AppColors.accentPrimary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(24),
           onTap: () => _openPlayer(context, index),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Glowing accent dot
+                // Иконка упражнения в Bento-стиле
                 Container(
-                  width: 12,
-                  height: 12,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColors.primaryGradient,
-                    boxShadow: [BoxShadow(color: AppColors.accentGlow, blurRadius: 6)],
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.subtleBackground,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      index == 4 ? Icons.bolt_rounded : Icons.accessibility_new_rounded,
+                      color: AppColors.accentPrimary,
+                      size: 28,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Text(exercise.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(exercise.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                      const SizedBox(height: 4),
+                      Text(
+                        index < 3 ? 'Posture Focus' : 'Growth Boost',
+                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  '${exercise.durationSeconds}s',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accentSecondary),
+                // Индикатор времени
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${exercise.durationSeconds}s',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.accentPrimary),
+                  ),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- 3. ГЛАВНАЯ КНОПКА ЗАПУСКА ---
+  Widget _buildStickyStartButton(BuildContext context) {
+    return Positioned(
+      bottom: 30,
+      left: 24,
+      right: 24,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentPrimary.withOpacity(0.3),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: () => _openPlayer(context, 0),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.textPrimary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            elevation: 0,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.play_arrow_rounded, size: 28),
+              SizedBox(width: 10),
+              Text('START ROUTINE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            ],
           ),
         ),
       ),
