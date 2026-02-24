@@ -61,7 +61,7 @@ class WorkoutScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.accentPrimary.withOpacity(0.05), AppColors.background],
+              colors: [AppColors.accentPrimary.withValues(alpha: 0.05), AppColors.background],
             ),
           ),
           child: Column(
@@ -138,7 +138,7 @@ class WorkoutScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -187,7 +187,7 @@ class WorkoutScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.accentPrimary.withOpacity(0.1),
+                    color: AppColors.accentPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -214,7 +214,7 @@ class WorkoutScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accentPrimary.withOpacity(0.3),
+              color: AppColors.accentPrimary.withValues(alpha: 0.3),
               blurRadius: 25,
               offset: const Offset(0, 10),
             ),

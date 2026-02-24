@@ -15,11 +15,8 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     // Verify that the welcome screen displays the main elements.
-    expect(find.text('HeightMaxx'), findsOneWidget);
-    expect(
-      find.text('Unlock your vertical potential.\nBuild the habit of perfect posture.'),
-      findsOneWidget,
-    );
-    expect(find.text('Start Growing'), findsOneWidget);
+    expect(find.text('Unlock Your Maximum Height'), findsOneWidget);
+    expect(find.text('Scientifically designed routines to maximize your growth potential.'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
   });
 }

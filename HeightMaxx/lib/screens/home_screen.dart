@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/user.dart';
 import '../theme/app_colors.dart';
-import 'workout_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.user, this.onStartWorkout});
@@ -124,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     color: isSelected ? AppColors.accentPrimary : AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: isSelected
-                        ? [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                        ? [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
                         : [],
                   ),
                   child: Column(
@@ -180,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Weekly Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              Icon(Icons.insights, color: AppColors.accentPrimary.withOpacity(0.5)),
+              Icon(Icons.insights, color: AppColors.accentPrimary.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 20),
@@ -245,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.1), blurRadius: 30, offset: const Offset(0, 10))],
+        boxShadow: [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10))],
       ),
       child: Column(
         children: [
@@ -277,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildStreakBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: AppColors.accentPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: AppColors.accentPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
       child: Row(children: [
         const Text('🔥', style: TextStyle(fontSize: 14)),
         const SizedBox(width: 4),
@@ -310,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: AppColors.accentGlow.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: AppColors.accentGlow.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
       ),
       child: Material(
         color: Colors.transparent,
@@ -368,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildAIInsightCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.accentPrimary.withOpacity(0.1))),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.1))),
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(Icons.auto_awesome, color: AppColors.accentPrimary, size: 18), SizedBox(width: 8), Text('AI INSIGHT', style: TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800, fontSize: 10))]),
         SizedBox(height: 8),

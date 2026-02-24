@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
@@ -95,7 +94,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accentPrimary.withOpacity(0.05),
+                color: AppColors.accentPrimary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -199,7 +198,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
           gradient: AppColors.primaryGradient,
           boxShadow: [
             BoxShadow(
-              color: AppColors.accentPrimary.withOpacity(0.3),
+              color: AppColors.accentPrimary.withValues(alpha: 0.3),
               blurRadius: 40,
               offset: const Offset(0, 15),
             ),
@@ -250,7 +249,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
         ],
       ),
       child: Row(

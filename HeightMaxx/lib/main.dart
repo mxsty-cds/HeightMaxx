@@ -4,12 +4,21 @@ import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _initializeFirebase();
+  runApp(const MyApp());
+}
+
+Future<void> _initializeFirebase() async {
   try {
     await Firebase.initializeApp();
-  } catch (error) {
-    debugPrint('Firebase initialization skipped: $error');
+    debugPrint('Firebase initialized successfully');
+  } catch (error, stackTrace) {
+    debugPrint('Firebase initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+    debugPrint(
+      'Firebase is disabled for this run. Add platform config files (google-services.json / GoogleService-Info.plist) to enable it.',
+    );
   }
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

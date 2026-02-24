@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/services.dart';
-import 'package:heightmaxx/screens/profile_setup_screen.dart';
 
 // Импорты твоих экранов (убедись, что пути правильные)
 import 'home_screen.dart';
@@ -45,7 +44,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
   @override
   Widget build(BuildContext context) {
     // Список страниц, которые мы запомнили
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       HomeScreen(user: widget.user),     // Твой дашборд с ростом
       DashboardScreen(user: widget.user), // Экран с уровнями и XP
       const WorkoutScreen(),             // Список упражнений
@@ -60,7 +59,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
       // IndexedStack сохраняет состояние (скролл, введенный текст) на каждой вкладке
       body: IndexedStack(
         index: _bottomNavIndex,
-        children: _pages,
+        children: pages,
       ),
 
       // Центральная кнопка - "Пульс" приложения
@@ -99,7 +98,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
       bottomNavigationBar: AnimatedBottomNavigationBar.builder(
         itemCount: _iconList.length,
         tabBuilder: (int index, bool isActive) {
-          final color = isActive ? AppColors.accentPrimary : Colors.grey.withOpacity(0.6);
+          final color = isActive ? AppColors.accentPrimary : Colors.grey.withValues(alpha: 0.6);
           return Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -136,7 +135,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
           setState(() => _bottomNavIndex = index);
         },
         shadow: Shadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 20,
           offset: const Offset(0, -5),
         ),

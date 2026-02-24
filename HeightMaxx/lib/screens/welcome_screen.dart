@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'profile_setup_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({Key? key}) : super(key: key);
+  const WelcomeScreen({super.key});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -113,7 +113,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2DCCA7),
           elevation: 8,
-          shadowColor: const Color(0xFF2DCCA7).withOpacity(0.4),
+          shadowColor: const Color(0xFF2DCCA7).withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -193,12 +193,12 @@ class SplashContent extends StatefulWidget {
   final bool isActive;
 
   const SplashContent({
-    Key? key,
+    super.key,
     required this.title,
     required this.text,
     required this.iconData,
     required this.isActive,
-  }) : super(key: key);
+  });
 
   @override
   State<SplashContent> createState() => _SplashContentState();
@@ -253,7 +253,7 @@ class _SplashContentState extends State<SplashContent>
                 // Мягкая тень в стиле Bento UI
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2DCCA7).withOpacity(0.15),
+                    color: const Color(0xFF2DCCA7).withValues(alpha: 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, 15),
                   ),
