@@ -1,9 +1,5 @@
-// lib/screens/profile_screen.dart
-//
-// A clean, structured profile screen displaying user metrics and account actions.
-// Designed for maximum readability and minimal visual clutter.
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,36 +10,84 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // --- Mock Data ---
-  // TODO: Replace with real data from the UserProfile model.
+  // --- Данные пользователя (Mock) ---
   final double height = 175;
   final double weight = 70;
-  final double goal = 180;
-  final int workoutDays = 3;
+  final int streak = 15;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // 1. Красивая шапка, которая сжимается при скролле
+          _buildSliverAppBar(),
+
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // 2. Сетка метрик (Height, Weight, Streak)
+                _appearAnimation(index: 1, child: _buildBiometricsGrid()),
+
+                const SizedBox(height: 32),
+                _appearAnimation(index: 2, child: _buildSectionLabel("Account")),
+                const SizedBox(height: 16),
+
+                // 3. Группа настроек
+                _appearAnimation(index: 3, child: _buildSettingsGroup([
+                  _buildSettingsTile(Icons.person_outline_rounded, "Personal Info", "Name, email, etc."),
+                  _buildSettingsTile(Icons.notifications_none_rounded, "Notifications", "Manage alerts"),
+                  _buildSettingsTile(Icons.lock_outline_rounded, "Security", "Password & privacy"),
+                ])),
+
+                const SizedBox(height: 32),
+                _appearAnimation(index: 4, child: _buildSectionLabel("Support")),
+                const SizedBox(height: 16),
+
+                _appearAnimation(index: 5, child: _buildSettingsGroup([
+                  _buildSettingsTile(Icons.help_outline_rounded, "Help Center", null),
+                  _buildSettingsTile(Icons.star_border_rounded, "Rate Us", null),
+                ])),
+
+                const SizedBox(height: 48),
+
+                // 4. Кнопка выхода (Исправлена!)
+                _appearAnimation(index: 6, child: _buildLogoutButton()),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- ШАПКА ---
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 280,
+      pinned: true,
+      stretch: true,
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(height: 40),
+              _buildAvatar(),
+              const SizedBox(height: 16),
               const Text(
-                'Profile',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.0,
-                  color: AppColors.textPrimary,
-                ),
+                "Alex Johnson",
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
               ),
-              const SizedBox(height: 40),
-              _buildUserInfoSection(),
-              const SizedBox(height: 40),
-              _buildButtonsSection(),
+              const Text(
+                "LEVEL 12 • PRO MOVER",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentPrimary, letterSpacing: 1.5),
+              ),
             ],
           ),
         ),
@@ -51,164 +95,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Builds the grouped card containing the user's biometric and goal data.
-  Widget _buildUserInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'User info:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-            color: AppColors.textSecondary,
-          ),
+  Widget _buildAvatar() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: const BoxDecoration(shape: BoxShape.circle, gradient: AppColors.primaryGradient),
+      child: const CircleAvatar(
+        radius: 54,
+        backgroundColor: Colors.white,
+        child: CircleAvatar(
+          radius: 50,
+          backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=47'),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24.0),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.textSecondary.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildInfoRow('Height', '${height.toStringAsFixed(0)} cm'),
-              const Divider(height: 32, color: AppColors.subtleBackground, thickness: 1),
-              _buildInfoRow('Weight', '${weight.toStringAsFixed(0)} kg'),
-              const Divider(height: 32, color: AppColors.subtleBackground, thickness: 1),
-              _buildInfoRow('Goal', '${goal.toStringAsFixed(0)} cm'),
-              const Divider(height: 32, color: AppColors.subtleBackground, thickness: 1),
-              // Omit the bottom divider for the last item
-              _buildInfoRow('Workout days', '$workoutDays days per week'),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  /// Helper method to create a clean, spaced row for a label/value pair.
-  Widget _buildInfoRow(String label, String value) {
+  // --- МЕТРИКИ (BENTO GRID) ---
+  Widget _buildBiometricsGrid() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        _buildMetricCard("Height", "$height", "cm", AppColors.accentPrimary),
+        const SizedBox(width: 12),
+        _buildMetricCard("Weight", "$weight", "kg", AppColors.accentSecondary),
+        const SizedBox(width: 12),
+        _buildMetricCard("Streak", "$streak", "days", Colors.orange),
       ],
     );
   }
 
-  /// Builds the vertical list of profile actions with clear visual hierarchy.
-  Widget _buildButtonsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Buttons:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-            color: AppColors.textSecondary,
+  Widget _buildMetricCard(String label, String value, String unit, Color color) {
+    return Expanded( // Expanded спасает от Right Overflow
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 8))],
+        ),
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            FittedBox( // FittedBox сжимает текст, если он не влезает
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                  const SizedBox(width: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(unit, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- ГРУППА НАСТРОЕК ---
+  Widget _buildSettingsGroup(List<Widget> tiles) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        children: List.generate(tiles.length, (index) {
+          return Column(
+            children: [
+              tiles[index],
+              if (index != tiles.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Divider(height: 1, color: AppColors.background),
+                ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile(IconData icon, String title, String? subtitle) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => HapticFeedback.lightImpact(),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(14)),
+                child: Icon(icon, color: AppColors.textPrimary, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    if (subtitle != null)
+                      Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // Primary Action
-        ElevatedButton(
-          onPressed: () {
-            // TODO: Navigate to Edit Profile screen
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accentPrimary, // Use accent for primary emphasis
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shadowColor: AppColors.accentPrimary.withValues(alpha: 0.3),
-            minimumSize: const Size(double.infinity, 56),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: const Text(
-            'Edit profile',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            ),
-          ),
+      ),
+    );
+  }
+
+  // --- КНОПКА ВЫХОДА (ИСПРАВЛЕННАЯ) ---
+  Widget _buildLogoutButton() {
+    return Center(
+      child: TextButton.icon(
+        onPressed: () => HapticFeedback.mediumImpact(),
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.redAccent,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        const SizedBox(height: 16),
-        
-        // Neutral Action 1
-        TextButton(
-          onPressed: () {
-            // TODO: Trigger Reset Plan confirmation dialog
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            minimumSize: const Size(double.infinity, 56),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: const Text(
-            'Reset plan',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // Neutral Action 2
-        TextButton(
-          onPressed: () {
-            // TODO: Navigate to Settings screen
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            minimumSize: const Size(double.infinity, 56),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: const Text(
-            'Settings',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+        icon: const Icon(Icons.logout_rounded, size: 20),
+        label: const Text("Log Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(
+      label.toUpperCase(),
+      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: AppColors.textSecondary),
+    );
+  }
+
+  Widget _appearAnimation({required int index, required Widget child}) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(offset: Offset(0, 15 * (1 - value)), child: child),
+        );
+      },
+      child: child,
     );
   }
 }

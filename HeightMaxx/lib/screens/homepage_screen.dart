@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/services.dart';
+import 'package:heightmaxx/screens/profile_setup_screen.dart';
 
 // Импорты твоих экранов (убедись, что пути правильные)
 import 'home_screen.dart';
