@@ -20,6 +20,8 @@ class UserProfile {
   final int streakDays;
   final DateTime? lastActiveDate;
   final int totalXpEarned;
+  final double? totalGrowthCm;
+  final int? totalWorkoutsCompleted;
   final List<String> unlockedThemeIds;
   final List<String> unlockedAvatarTierIds;
   final List<String> unlockedWorkoutTierIds;
@@ -50,6 +52,8 @@ class UserProfile {
     this.streakDays = 0,
     this.lastActiveDate,
     this.totalXpEarned = 0,
+    this.totalGrowthCm,
+    this.totalWorkoutsCompleted,
     this.unlockedThemeIds = const [],
     this.unlockedAvatarTierIds = const [],
     this.unlockedWorkoutTierIds = const [],
@@ -103,6 +107,8 @@ class UserProfile {
     int? streakDays,
     DateTime? lastActiveDate,
     int? totalXpEarned,
+    double? totalGrowthCm,
+    int? totalWorkoutsCompleted,
     List<String>? unlockedThemeIds,
     List<String>? unlockedAvatarTierIds,
     List<String>? unlockedWorkoutTierIds,
@@ -131,6 +137,9 @@ class UserProfile {
       streakDays: streakDays ?? this.streakDays,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       totalXpEarned: totalXpEarned ?? this.totalXpEarned,
+        totalGrowthCm: totalGrowthCm ?? this.totalGrowthCm,
+        totalWorkoutsCompleted:
+          totalWorkoutsCompleted ?? this.totalWorkoutsCompleted,
       unlockedThemeIds: unlockedThemeIds ?? this.unlockedThemeIds,
       unlockedAvatarTierIds: unlockedAvatarTierIds ?? this.unlockedAvatarTierIds,
       unlockedWorkoutTierIds: unlockedWorkoutTierIds ?? this.unlockedWorkoutTierIds,
@@ -163,6 +172,8 @@ class UserProfile {
       'streakDays': streakDays,
       'lastActiveDate': lastActiveDate?.toIso8601String(),
       'totalXpEarned': totalXpEarned,
+      'totalGrowthCm': totalGrowthCm,
+      'totalWorkoutsCompleted': totalWorkoutsCompleted,
       'unlockedThemeIds': unlockedThemeIds,
       'unlockedAvatarTierIds': unlockedAvatarTierIds,
       'unlockedWorkoutTierIds': unlockedWorkoutTierIds,
@@ -194,6 +205,8 @@ class UserProfile {
       streakDays: json['streakDays'] as int? ?? 0,
       lastActiveDate: json['lastActiveDate'] != null ? DateTime.parse(json['lastActiveDate'] as String) : null,
       totalXpEarned: json['totalXpEarned'] as int? ?? 0,
+      totalGrowthCm: (json['totalGrowthCm'] as num?)?.toDouble(),
+      totalWorkoutsCompleted: json['totalWorkoutsCompleted'] as int?,
       unlockedThemeIds: List<String>.from(json['unlockedThemeIds'] ?? []),
       unlockedAvatarTierIds: List<String>.from(json['unlockedAvatarTierIds'] ?? []),
       unlockedWorkoutTierIds: List<String>.from(json['unlockedWorkoutTierIds'] ?? []),

@@ -3,7 +3,8 @@ import '../models/user.dart';
 import '../models/user_factors.dart';
 import '../screens/homepage_screen.dart';
 import '../theme/app_colors.dart';
-import '../widgets/premium_stepper.dart';
+import '../widgets/circular_value_slider.dart';
+import '../widgets/selectable_pill.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -20,15 +21,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool _isSubmitting = false;
 
   // Temporary state for the form
-  int _age = 18;
+  double _age = 18;
   Sex? _sex;
-  int _heightCm = 170;
+  double _heightFt = 5.9;
   final int _weightKg = 65;
   ActivityLevel? _activityLevel;
   GrowthGoal? _growthGoal = GrowthGoal.both;
   String _workoutFocus = 'mixed';
   int _workoutDaysPerWeek = 4;
   int _workoutMinutesPerSession = 20;
+
+  double get _heightCm => _heightFt * 30.48;
 
   @override
   void dispose() {
@@ -103,15 +106,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         fullName: finalName,
         username: finalUsername,
         nickname: finalNickname,
-        age: _age,
+        age: _age.round(),
         sex: _sex,
-        heightCm: _heightCm.toDouble(),
+        heightCm: double.parse(_heightCm.toStringAsFixed(1)),
         weightKg: _weightKg.toDouble(),
         activityLevel: _activityLevel,
         growthGoal: _growthGoal,
         workoutFocus: _workoutFocus,
         workoutDaysPerWeek: _workoutDaysPerWeek,
         workoutMinutesPerSession: _workoutMinutesPerSession,
+        totalGrowthCm: 0,
+        totalWorkoutsCompleted: 0,
         profileCreatedAt: DateTime.now(),
       );
 
@@ -229,38 +234,30 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: Sex.values
-                .map(
-                  (option) => ChoiceChip(
-                label: Text(option.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
-                selected: _sex == option,
-                selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
-                backgroundColor: AppColors.surface,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                onSelected: (selected) => setState(() => _sex = selected ? option : null),
+            children: Sex.values.map(
+              (option) => SelectablePill(
+                label: option.formattedName,
+                icon: option == Sex.male ? Icons.male_rounded : Icons.female_rounded,
+                isSelected: _sex == option,
+                onTap: () => setState(() => _sex = option),
               ),
-            )
-                .toList(),
+            ).toList(),
           ),
           const SizedBox(height: 40),
           const Text('Select Your Age', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 16),
-          PremiumStepper(
+          CircularValueSlider(
             value: _age,
-            minValue: 10,
-            maxValue: 80,
+            min: 10,
+            max: 80,
             unit: 'Years',
+            isDecimal: false,
             onChanged: (val) => setState(() => _age = val),
           ),
         ],
       ),
     );
   }
-
-  // Note: _buildStep2Metrics, _buildStep3Habits, _buildStepContainer,
-  // and _buildBottomControls remain exactly the same as the previous implementation.
-  // ... (omitted here for brevity, paste them exactly as generated in the previous step)
 
   Widget _buildStep2Metrics() {
     return _buildStepContainer(
@@ -269,14 +266,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Height', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const Text('Height (Feet)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 16),
-          PremiumStepper(
-            value: _heightCm,
-            minValue: 100,
-            maxValue: 250,
-            unit: 'cm',
-            onChanged: (val) => setState(() => _heightCm = val),
+          CircularValueSlider(
+            value: _heightFt,
+            min: 4.0,
+            max: 8.0,
+            unit: 'ft',
+            isDecimal: true,
+            onChanged: (val) => setState(() => _heightFt = val),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              '${_heightFt.toStringAsFixed(1)} ft • ${_heightCm.toStringAsFixed(1)} cm',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
           ),
         ],
       ),
@@ -295,15 +300,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: ActivityLevel.values.map((a) => ChoiceChip(
-              label: Text(a.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
-              selected: _activityLevel == a,
-              selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
-              backgroundColor: AppColors.surface,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              onSelected: (selected) => setState(() => _activityLevel = selected ? a : null),
-            )).toList(),
+            children: ActivityLevel.values
+                .map(
+                  (activity) => SelectablePill(
+                    label: activity.formattedName,
+                    isSelected: _activityLevel == activity,
+                    onTap: () => setState(() => _activityLevel = activity),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 28),
           const Text('Primary Goal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -311,15 +316,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: GrowthGoal.values.map((goal) => ChoiceChip(
-              label: Text(goal.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
-              selected: _growthGoal == goal,
-              selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
-              backgroundColor: AppColors.surface,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              onSelected: (selected) => setState(() => _growthGoal = selected ? goal : null),
-            )).toList(),
+            children: GrowthGoal.values
+                .map(
+                  (goal) => SelectablePill(
+                    label: goal.formattedName,
+                    isSelected: _growthGoal == goal,
+                    onTap: () => setState(() => _growthGoal = goal),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 28),
           const Text('Workout Focus', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -336,22 +341,24 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           const SizedBox(height: 28),
           const Text('Workout Days Per Week', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 16),
-          PremiumStepper(
-            value: _workoutDaysPerWeek,
-            minValue: 1,
-            maxValue: 7,
+          CircularValueSlider(
+            value: _workoutDaysPerWeek.toDouble(),
+            min: 1,
+            max: 7,
             unit: 'Days',
-            onChanged: (val) => setState(() => _workoutDaysPerWeek = val),
+            isDecimal: false,
+            onChanged: (val) => setState(() => _workoutDaysPerWeek = val.round()),
           ),
           const SizedBox(height: 28),
           const Text('Minutes Per Session', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 16),
-          PremiumStepper(
-            value: _workoutMinutesPerSession,
-            minValue: 5,
-            maxValue: 90,
+          CircularValueSlider(
+            value: _workoutMinutesPerSession.toDouble(),
+            min: 5,
+            max: 90,
             unit: 'Min',
-            onChanged: (val) => setState(() => _workoutMinutesPerSession = val),
+            isDecimal: false,
+            onChanged: (val) => setState(() => _workoutMinutesPerSession = val.round()),
           ),
         ],
       ),
@@ -359,19 +366,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Widget _buildFocusChip(String value, String label) {
-    return ChoiceChip(
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-      selected: _workoutFocus == value,
-      selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
-      backgroundColor: AppColors.surface,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      onSelected: (selected) {
-        if (!selected) {
-          return;
-        }
-        setState(() => _workoutFocus = value);
-      },
+    return SelectablePill(
+      label: label,
+      isSelected: _workoutFocus == value,
+      onTap: () => setState(() => _workoutFocus = value),
     );
   }
 

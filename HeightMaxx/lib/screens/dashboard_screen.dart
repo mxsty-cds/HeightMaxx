@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 // Твои импорты
 import '../models/user.dart';
+import 'leaderboard_screen.dart';
 import '../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,6 +15,33 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   int _selectedChartIndex = 4; // Выбранный день на графике (Пятница)
+
+  void _openLeaderboard() {
+    final currentUser = widget.user ?? UserProfile(
+      id: 'guest_user',
+      username: 'guest',
+      nickname: 'Guest',
+      fullName: 'Guest',
+      totalGrowthCm: 0,
+      totalWorkoutsCompleted: 0,
+    );
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 220),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) => LeaderboardScreen(currentUser: currentUser),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeIn,
+          );
+          return FadeTransition(opacity: curved, child: child);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,22 +212,25 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       children: [
         Expanded(
           flex: 2,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            height: 160,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.black, Colors.grey.shade900]),
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Leaderboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                const Spacer(),
-                _buildFriendRow("Diyor", "1st", "🔥"),
-                const SizedBox(height: 8),
-                _buildFriendRow("Alex", "2nd", "💪"),
-              ],
+          child: GestureDetector(
+            onTap: _openLeaderboard,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              height: 160,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.black, Colors.grey.shade900]),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Leaderboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                  const Spacer(),
+                  _buildFriendRow("Diyor", "1st", "🔥"),
+                  const SizedBox(height: 8),
+                  _buildFriendRow("Alex", "2nd", "💪"),
+                ],
+              ),
             ),
           ),
         ),

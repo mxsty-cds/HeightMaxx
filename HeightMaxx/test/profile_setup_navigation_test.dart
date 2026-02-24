@@ -12,9 +12,9 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField).first, 'Alex Carter');
-    final maleChip = find.widgetWithText(ChoiceChip, 'MALE');
-    await tester.ensureVisible(maleChip);
-    await tester.tap(maleChip);
+    final maleOption = find.text('Male');
+    await tester.ensureVisible(maleOption);
+    await tester.tap(maleOption);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Continue'));
@@ -23,14 +23,46 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
-    final moderateChip = find.widgetWithText(ChoiceChip, 'MODERATE');
-    await tester.ensureVisible(moderateChip);
-    await tester.tap(moderateChip);
+    final moderateOption = find.text('Moderate');
+    await tester.ensureVisible(moderateOption);
+    await tester.tap(moderateOption);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Complete Profile'));
     await tester.pumpAndSettle();
 
     expect(find.byType(HomePageScreen), findsOneWidget);
+  });
+
+  testWidgets('Feet height is converted to cm in created profile', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ProfileSetupScreen(),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'Alex Carter');
+    final maleOption = find.text('Male');
+    await tester.ensureVisible(maleOption);
+    await tester.tap(maleOption);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final moderateOption = find.text('Moderate');
+    await tester.ensureVisible(moderateOption);
+    await tester.tap(moderateOption);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Complete Profile'));
+    await tester.pumpAndSettle();
+
+    final homePage = tester.widget<HomePageScreen>(find.byType(HomePageScreen));
+    expect(homePage.user, isNotNull);
+    expect(homePage.user!.heightCm, 179.8);
   });
 }
