@@ -1,8 +1,3 @@
-// lib/screens/profile_setup_screen.dart
-//
-// Multi-step biometric and habit onboarding flow.
-// Updated to capture user nickname and finalize profile fields.
-
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/user_factors.dart';
@@ -210,15 +205,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: Sex.values
                 .map(
                   (option) => ChoiceChip(
-                    label: Text(option.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
-                    selected: _sex == option,
-                    selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
-                    backgroundColor: AppColors.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    onSelected: (selected) => setState(() => _sex = selected ? option : null),
-                  ),
-                )
+                label: Text(option.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
+                selected: _sex == option,
+                selectedColor: AppColors.accentPrimary.withValues(alpha: 0.2),
+                backgroundColor: AppColors.surface,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                onSelected: (selected) => setState(() => _sex = selected ? option : null),
+              ),
+            )
                 .toList(),
           ),
           const SizedBox(height: 40),
@@ -236,10 +231,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  // Note: _buildStep2Metrics, _buildStep3Habits, _buildStepContainer, 
+  // Note: _buildStep2Metrics, _buildStep3Habits, _buildStepContainer,
   // and _buildBottomControls remain exactly the same as the previous implementation.
   // ... (omitted here for brevity, paste them exactly as generated in the previous step)
-  
+
   Widget _buildStep2Metrics() {
     return _buildStepContainer(
       title: 'Current Metrics',
