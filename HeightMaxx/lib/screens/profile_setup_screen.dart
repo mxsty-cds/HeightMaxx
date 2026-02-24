@@ -17,6 +17,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   int _currentIndex = 0;
+  bool _isSubmitting = false;
 
   // Temporary state for the form
   int _age = 18;
@@ -75,39 +76,65 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
   }
 
-  void _completeSetup() {
-    final rawName = _nameController.text.trim();
-    final rawNickname = _nicknameController.text.trim();
+  Future<void> _completeSetup() async {
+    if (_isSubmitting) {
+      return;
+    }
 
-    final finalName = rawName.isNotEmpty ? rawName : 'Mover';
-    final finalNickname = rawNickname.isNotEmpty ? rawNickname : finalName;
-    final finalId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
-    final finalUsername = finalNickname
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), '_');
+    setState(() => _isSubmitting = true);
 
-    final newUser = UserProfile.fromJson({
-      'id': finalId,
-      'fullName': finalName,
-      'username': finalUsername,
-      'nickname': finalNickname,
-      'age': _age,
-      'sex': _sex?.name,
-      'heightCm': _heightCm.toDouble(),
-      'weightKg': _weightKg.toDouble(),
-      'activityLevel': _activityLevel?.name,
-      'growthGoal': _growthGoal?.name,
-      'workoutFocus': _workoutFocus,
-      'workoutDaysPerWeek': _workoutDaysPerWeek,
-      'workoutMinutesPerSession': _workoutMinutesPerSession,
-      'profileCreatedAt': DateTime.now().toIso8601String(),
-    });
+    try {
+      final rawName = _nameController.text.trim();
+      final rawNickname = _nicknameController.text.trim();
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => HomePageScreen(user: newUser, initialIndex: 1),
-      ),
-    );
+      final finalName = rawName.isNotEmpty ? rawName : 'Mover';
+      final finalNickname = rawNickname.isNotEmpty ? rawNickname : finalName;
+      final finalId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
+      final sanitizedUsername = finalNickname
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9_\s]'), '')
+          .replaceAll(RegExp(r'\s+'), '_');
+      final finalUsername = sanitizedUsername.isNotEmpty
+          ? sanitizedUsername
+          : 'user_${DateTime.now().millisecondsSinceEpoch}';
+
+      final newUser = UserProfile(
+        id: finalId,
+        fullName: finalName,
+        username: finalUsername,
+        nickname: finalNickname,
+        age: _age,
+        sex: _sex,
+        heightCm: _heightCm.toDouble(),
+        weightKg: _weightKg.toDouble(),
+        activityLevel: _activityLevel,
+        growthGoal: _growthGoal,
+        workoutFocus: _workoutFocus,
+        workoutDaysPerWeek: _workoutDaysPerWeek,
+        workoutMinutesPerSession: _workoutMinutesPerSession,
+        profileCreatedAt: DateTime.now(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HomePageScreen(user: newUser, initialIndex: 1),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showValidation('Could not complete profile. Please try again.');
+      debugPrint('Profile setup failed: $error');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -377,7 +404,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           padding: const EdgeInsets.symmetric(vertical: 20),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
-        onPressed: _nextPage,
+        onPressed: _isSubmitting ? null : _nextPage,
         child: Text(
           _currentIndex == 2 ? 'Complete Profile' : 'Continue',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),

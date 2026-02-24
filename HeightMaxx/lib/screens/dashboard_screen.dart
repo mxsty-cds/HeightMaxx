@@ -155,7 +155,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                ),
+              ),
             ],
           ),
           const Spacer(),
