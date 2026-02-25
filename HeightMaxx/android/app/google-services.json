@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "53720443772",
+    "project_id": "heightmaxxx-d4ff5",
+    "storage_bucket": "heightmaxxx-d4ff5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:53720443772:android:23fd9d998efb5fb2fe12f9",
+        "android_client_info": {
+          "package_name": "com.example.heightmaxx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNr-zd9OMJYz3P1Nf8dLCEesmBPYzp6qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
