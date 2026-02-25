@@ -1,42 +1,43 @@
-// lib/screens/profile_screen.dart
-//
-// A premium, animated profile screen with core metrics and account actions.
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Добавили для кнопки Выхода
+
 import '../models/user.dart';
 import '../theme/app_colors.dart';
+import 'welcome_screen.dart'; // Убедись, что путь правильный для экрана входа
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final UserProfile? user; // 1. ТЕПЕРЬ ЭКРАН ПРИНИМАЕТ ДАННЫЕ!
+
+  const ProfileScreen({super.key, this.user});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Mock User Data (Replace with your actual state management)
-  late UserProfile _user;
   final ImagePicker _picker = ImagePicker();
+  String? _localAvatarPath; // Для локального отображения фотки до загрузки в облако
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize with mock data for demonstration
-    _user = const UserProfile(
-      id: 'usr_1',
-      username: 'apex_mover',
-      nickname: 'Alex',
-      level: 12,
-      heightCm: 175,
-      weightKg: 70,
-      streakDays: 14,
-      // avatarPath: null, // Starts null to show fallback
-    );
+  // --- ХЕЛПЕРЫ ДЛЯ ДАННЫХ ---
+  String get _nickname => widget.user?.nickname.isNotEmpty == true ? widget.user!.nickname : 'Mover';
+  int get _level => widget.user?.level ?? 1;
+  String get _streak => '${widget.user?.streakDays ?? 0} Days';
+
+  // Конвертация в футы
+  String get _heightFt {
+    if (widget.user?.heightCm == null) return '-- ft';
+    return '${(widget.user!.heightCm! / 30.48).toStringAsFixed(1)} ft';
   }
 
+  String get _weightKg {
+    if (widget.user?.weightKg == null) return '-- kg';
+    return '${widget.user!.weightKg!.toStringAsFixed(0)} kg';
+  }
+
+  // --- ЛОГИКА ФОТО ---
   Future<void> _pickAvatarFrom(ImageSource source) async {
     HapticFeedback.lightImpact();
     try {
@@ -47,45 +48,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         imageQuality: 85,
       );
 
-      if (image == null || !mounted) {
-        return;
-      }
+      if (image == null || !mounted) return;
 
       setState(() {
-        _user = _user.copyWith(avatarPath: image.path);
+        _localAvatarPath = image.path;
       });
+
+      // Бро, тут в будущем мы добавим загрузку этой фотки в Firebase Storage!
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Avatar updated locally! (Cloud save coming soon)'), behavior: SnackBarBehavior.floating),
+      );
+
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              source == ImageSource.camera
-                  ? 'Could not open camera. Please check camera permissions.'
-                  : 'Could not open gallery. Please check photo permissions.',
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       debugPrint('Avatar picker error: $error');
     }
   }
 
-  /// Prompts the user to select an image source (camera or gallery).
   Future<void> _pickAvatar() async {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
 
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -93,30 +79,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 42,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.subtleBackground,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                Container(width: 42, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: AppColors.subtleBackground, borderRadius: BorderRadius.circular(2))),
                 ListTile(
                   leading: const Icon(Icons.photo_library_rounded, color: AppColors.textPrimary),
-                  title: const Text('Choose from Gallery'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _pickAvatarFrom(ImageSource.gallery);
-                  },
+                  title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () { Navigator.of(context).pop(); _pickAvatarFrom(ImageSource.gallery); },
                 ),
                 ListTile(
                   leading: const Icon(Icons.photo_camera_rounded, color: AppColors.textPrimary),
-                  title: const Text('Take Photo'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _pickAvatarFrom(ImageSource.camera);
-                  },
+                  title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () { Navigator.of(context).pop(); _pickAvatarFrom(ImageSource.camera); },
                 ),
               ],
             ),
@@ -126,6 +98,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // --- ЛОГИКА ВЫХОДА ИЗ АККАУНТА ---
+  Future<void> _signOut() async {
+    HapticFeedback.heavyImpact();
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    // Возвращаем юзера на стартовый экран
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+          (route) => false,
+    );
+  }
+
+  // --- UI СБОРКА ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,6 +126,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildAnimatedStatRow(),
               const SizedBox(height: 48),
               _buildAccountActions(),
+              const SizedBox(height: 32),
+              _buildLogoutButton(), // Новая кнопка выхода
+              const SizedBox(height: 60), // Отступ для нижнего меню
             ],
           ),
         ),
@@ -148,8 +136,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Builds the Avatar, Name, and Gamified Title with a smooth slide-up animation.
   Widget _buildAnimatedHeader() {
+    // Определяем, какую картинку показывать: локально выбранную или ту, что в Firebase
+    final displayImagePath = _localAvatarPath ?? widget.user?.avatarPath;
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 600),
@@ -157,96 +147,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 30 * (1 - value)),
-            child: child,
-          ),
+          child: Transform.translate(offset: Offset(0, 30 * (1 - value)), child: child),
         );
       },
       child: Column(
         children: [
-          // Interactive Avatar
           GestureDetector(
             onTap: _pickAvatar,
             child: Stack(
               alignment: Alignment.bottomRight,
               children: [
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: 120, height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.subtleBackground,
                     border: Border.all(color: AppColors.surface, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accentSecondary.withValues(alpha: 0.15),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                    // Show selected image, or fallback to gradient initial
-                    image: _user.avatarPath != null
-                        ? DecorationImage(
-                            image: FileImage(File(_user.avatarPath!)),
-                            fit: BoxFit.cover,
-                          )
+                    boxShadow: [BoxShadow(color: AppColors.accentSecondary.withValues(alpha: 0.15), blurRadius: 24, offset: const Offset(0, 10))],
+                    image: displayImagePath != null
+                        ? DecorationImage(image: FileImage(File(displayImagePath)), fit: BoxFit.cover)
                         : null,
-                    gradient: _user.avatarPath == null ? AppColors.primaryGradient : null,
+                    gradient: displayImagePath == null ? AppColors.primaryGradient : null,
                   ),
-                  child: _user.avatarPath == null
+                  child: displayImagePath == null
                       ? Center(
-                          child: Text(
-                            _user.nickname.isNotEmpty ? _user.nickname[0].toUpperCase() : 'U',
-                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white),
-                          ),
-                        )
+                    child: Text(
+                      _nickname.isNotEmpty ? _nickname[0].toUpperCase() : 'U',
+                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                  )
                       : null,
                 ),
-                // Small edit badge
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
-                  ),
+                  decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)]),
                   child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.textPrimary),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            _user.nickname,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -1.0,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(_nickname, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text(
-            'LEVEL ${_user.level} • APEX MOVER',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.5,
-              color: AppColors.accentPrimary,
-            ),
-          ),
+          Text('LEVEL $_level • APEX MOVER', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.5, color: AppColors.accentPrimary)),
         ],
       ),
     );
   }
 
-  /// Builds the horizontal scrollable row of core metrics with staggered entrance.
   Widget _buildAnimatedStatRow() {
     final stats = [
-      {'label': 'Height', 'val': '${_user.heightCm?.toStringAsFixed(0) ?? "--"} cm'},
-      {'label': 'Weight', 'val': '${_user.weightKg?.toStringAsFixed(0) ?? "--"} kg'},
-      {'label': 'Streak', 'val': '${_user.streakDays} Days'},
+      {'label': 'Height', 'val': _heightFt},
+      {'label': 'Weight', 'val': _weightKg},
+      {'label': 'Streak', 'val': _streak},
     ];
 
     return TweenAnimationBuilder<double>(
@@ -259,7 +212,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           clipBehavior: Clip.none,
           child: Row(
             children: List.generate(stats.length, (index) {
-              // Stagger calculation
               final delayOffset = (index * 0.2).clamp(0.0, 1.0);
               final itemOpacity = ((value - delayOffset) / (1 - delayOffset)).clamp(0.0, 1.0);
 
@@ -287,49 +239,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textSecondary.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.textSecondary.withValues(alpha: 0.05), blurRadius: 16, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(label.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textSecondary)),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
         ],
       ),
     );
   }
 
-  /// Builds the clean, minimal account action buttons.
   Widget _buildAccountActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Account',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textSecondary),
-        ),
+        const Text('Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: AppColors.textSecondary)),
         const SizedBox(height: 16),
         _buildActionTile(Icons.tune_rounded, 'Preferences', () {}),
         const SizedBox(height: 8),
@@ -345,10 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
+        onTap: () { HapticFeedback.lightImpact(); onTap(); },
         borderRadius: BorderRadius.circular(20),
         splashColor: AppColors.accentPrimary.withValues(alpha: 0.1),
         highlightColor: AppColors.accentPrimary.withValues(alpha: 0.05),
@@ -358,17 +282,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Icon(icon, color: AppColors.textPrimary, size: 22),
               const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                ),
-              ),
+              Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary))),
               const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return TextButton.icon(
+      onPressed: _signOut,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.redAccent,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      icon: const Icon(Icons.logout_rounded),
+      label: const Text("Sign Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
     );
   }
 }

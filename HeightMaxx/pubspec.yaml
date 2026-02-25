@@ -37,6 +37,7 @@ dependencies:
   animated_bottom_navigation_bar: ^1.4.0
   lottie: ^3.3.2
   image_picker: ^1.2.1
+  responsive_navigation_bar: ^6.2.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
 

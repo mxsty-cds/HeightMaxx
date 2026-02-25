@@ -1,19 +1,26 @@
-// lib/models/user.dart
-//
-// Extended UserProfile integrating biometric data, habit tracking,
-// gamification, and the new distinct identity fields (username/nickname).
-
 import 'user_factors.dart';
 import 'growth_profile.dart';
 
+// 1. ВОТ ЭТО РАСШИРЕНИЕ ИСПРАВЛЯЕТ ВСЕ ОШИБКИ ИЗ ТВОЕГО СКРИНА!
+// Оно безопасно превращает строки из Firebase обратно в твои Enum-ы.
+extension EnumByNameOrNull<T extends Enum> on Iterable<T> {
+  T? byNameOrNull(String? name) {
+    if (name == null) return null;
+    for (var value in this) {
+      if (value.name == name) return value;
+    }
+    return null;
+  }
+}
+
 class UserProfile {
-  // Identity Fields
+  // --- Identity Fields ---
   final String id;
   final String fullName;
   final String username;
   final String nickname;
-  
-  // Gamification Fields
+
+  // --- Gamification Fields ---
   final int level;
   final int currentXp;
   final int xpToNextLevel;
@@ -26,7 +33,8 @@ class UserProfile {
   final List<String> unlockedAvatarTierIds;
   final List<String> unlockedWorkoutTierIds;
   final String? avatarPath;
-  // Biometric & Habit Fields
+
+  // --- Biometric & Habit Fields ---
   final int? age;
   final Sex? sex;
   final double? heightCm;
@@ -57,7 +65,6 @@ class UserProfile {
     this.unlockedThemeIds = const [],
     this.unlockedAvatarTierIds = const [],
     this.unlockedWorkoutTierIds = const [],
-    // Biometrics
     this.age,
     this.sex,
     this.heightCm,
@@ -74,9 +81,9 @@ class UserProfile {
     this.avatarPath,
   });
 
-  /// Hook to calculate derived metrics if sufficient biometric data exists.
+  /// Вычисляет профиль роста
   GrowthProfile? get growthProfile {
-    if (age != null && heightCm != null && weightKg != null && 
+    if (age != null && heightCm != null && weightKg != null &&
         activityLevel != null && postureLevel != null) {
       return GrowthProfile(
         age: age!,
@@ -89,8 +96,9 @@ class UserProfile {
     return null;
   }
 
-  /// Checks if the user has completed the onboarding profile setup.
-  bool get hasCompletedProfile => age != null && heightCm != null && growthGoal != null;
+  /// Проверяет, заполнил ли юзер все данные
+  bool get hasCompletedProfile =>
+      age != null && heightCm != null && growthGoal != null;
 
   double get progressToNextLevel {
     if (xpToNextLevel <= 0) return 0.0;
@@ -140,11 +148,13 @@ class UserProfile {
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       totalXpEarned: totalXpEarned ?? this.totalXpEarned,
       totalGrowthCm: totalGrowthCm ?? this.totalGrowthCm,
-      totalWorkoutsCompleted:
-          totalWorkoutsCompleted ?? this.totalWorkoutsCompleted,
+      totalWorkoutsCompleted: totalWorkoutsCompleted ??
+          this.totalWorkoutsCompleted,
       unlockedThemeIds: unlockedThemeIds ?? this.unlockedThemeIds,
-      unlockedAvatarTierIds: unlockedAvatarTierIds ?? this.unlockedAvatarTierIds,
-      unlockedWorkoutTierIds: unlockedWorkoutTierIds ?? this.unlockedWorkoutTierIds,
+      unlockedAvatarTierIds: unlockedAvatarTierIds ??
+          this.unlockedAvatarTierIds,
+      unlockedWorkoutTierIds: unlockedWorkoutTierIds ??
+          this.unlockedWorkoutTierIds,
       age: age ?? this.age,
       sex: sex ?? this.sex,
       heightCm: heightCm ?? this.heightCm,
@@ -156,13 +166,14 @@ class UserProfile {
       growthGoal: growthGoal ?? this.growthGoal,
       workoutFocus: workoutFocus ?? this.workoutFocus,
       workoutDaysPerWeek: workoutDaysPerWeek ?? this.workoutDaysPerWeek,
-      workoutMinutesPerSession:
-          workoutMinutesPerSession ?? this.workoutMinutesPerSession,
+      workoutMinutesPerSession: workoutMinutesPerSession ??
+          this.workoutMinutesPerSession,
       profileCreatedAt: profileCreatedAt ?? this.profileCreatedAt,
       avatarPath: avatarPath ?? this.avatarPath,
     );
   }
 
+  // 2. Метод toJson для отправки в Firebase Firestore
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -196,7 +207,9 @@ class UserProfile {
       'avatarPath': avatarPath,
     };
   }
-  
+
+  // 3. Метод fromJson для получения данных из Firebase Firestore
+  // 3. Метод fromJson для получения данных из Firebase Firestore
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
@@ -207,26 +220,33 @@ class UserProfile {
       currentXp: json['currentXp'] as int? ?? 0,
       xpToNextLevel: json['xpToNextLevel'] as int? ?? 100,
       streakDays: json['streakDays'] as int? ?? 0,
-      lastActiveDate: json['lastActiveDate'] != null ? DateTime.parse(json['lastActiveDate'] as String) : null,
+      lastActiveDate: json['lastActiveDate'] != null ? DateTime.parse(
+          json['lastActiveDate'] as String) : null,
       totalXpEarned: json['totalXpEarned'] as int? ?? 0,
       totalGrowthCm: (json['totalGrowthCm'] as num?)?.toDouble(),
       totalWorkoutsCompleted: json['totalWorkoutsCompleted'] as int?,
       unlockedThemeIds: List<String>.from(json['unlockedThemeIds'] ?? []),
-      unlockedAvatarTierIds: List<String>.from(json['unlockedAvatarTierIds'] ?? []),
-      unlockedWorkoutTierIds: List<String>.from(json['unlockedWorkoutTierIds'] ?? []),
+      unlockedAvatarTierIds: List<String>.from(
+          json['unlockedAvatarTierIds'] ?? []),
+      unlockedWorkoutTierIds: List<String>.from(
+          json['unlockedWorkoutTierIds'] ?? []),
       age: json['age'] as int?,
-      sex: Sex.values.byNameOrNull(json['sex'] as String?),
+
+      // ИСПОЛЬЗУЕМ ВСТРОЕННЫЙ МЕТОД asNameMap() - НИКАКИХ ОШИБОК!
+      sex: Sex.values.asNameMap()[json['sex']],
       heightCm: (json['heightCm'] as num?)?.toDouble(),
       weightKg: (json['weightKg'] as num?)?.toDouble(),
-      activityLevel: ActivityLevel.values.byNameOrNull(json['activityLevel'] as String?),
-      sleepQuality: SleepQuality.values.byNameOrNull(json['sleepQuality'] as String?),
-      hydrationLevel: HydrationLevel.values.byNameOrNull(json['hydrationLevel'] as String?),
-      postureLevel: PostureLevel.values.byNameOrNull(json['postureLevel'] as String?),
-      growthGoal: GrowthGoal.values.byNameOrNull(json['growthGoal'] as String?),
+      activityLevel: ActivityLevel.values.asNameMap()[json['activityLevel']],
+      sleepQuality: SleepQuality.values.asNameMap()[json['sleepQuality']],
+      hydrationLevel: HydrationLevel.values.asNameMap()[json['hydrationLevel']],
+      postureLevel: PostureLevel.values.asNameMap()[json['postureLevel']],
+      growthGoal: GrowthGoal.values.asNameMap()[json['growthGoal']],
+
       workoutFocus: json['workoutFocus'] as String?,
       workoutDaysPerWeek: json['workoutDaysPerWeek'] as int?,
       workoutMinutesPerSession: json['workoutMinutesPerSession'] as int?,
-      profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(json['profileCreatedAt'] as String) : null,
+      profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(
+          json['profileCreatedAt'] as String) : null,
       avatarPath: json['avatarPath'] as String?,
     );
   }

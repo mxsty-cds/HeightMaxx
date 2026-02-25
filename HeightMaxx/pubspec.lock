@@ -464,6 +464,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.0"
+  responsive_navigation_bar:
+    dependency: "direct main"
+    description:
+      name: responsive_navigation_bar
+      sha256: "40c423a2597601a86dbc93b925eeaf2f681a1ad2975cce9e460fbc1747db63a0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.0"
   sky_engine:
     dependency: transitive
     description: flutter

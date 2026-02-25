@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/user.dart';
+import '../models/user_factors.dart';
 import '../theme/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,12 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DateTime _today = DateTime.now();
-  int _selectedDayIndex = 0;
-
-  final int _waterDrank = 1200;
-  final int _waterGoal = 2500;
-  final double _sleepHours = 7.5;
-  final int _streak = 12;
+  late int _selectedDayIndex;
 
   @override
   void initState() {
@@ -29,6 +25,41 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectedDayIndex = _today.weekday - 1;
   }
 
+  // --- ЛОГИКА ДАННЫХ И КОНВЕРТАЦИИ ---
+
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  String get _displayName {
+    if (widget.user == null) return 'Mover';
+    return widget.user!.nickname.isNotEmpty ? widget.user!.nickname : widget.user!.fullName.split(' ').first;
+  }
+
+  // Переводим CM в FT на лету! (1 фут = 30.48 см)
+  String get _currentHeight {
+    if (widget.user?.heightCm == null) return '-- ft';
+    final ft = widget.user!.heightCm! / 30.48;
+    return '${ft.toStringAsFixed(1)} ft';
+  }
+
+  String get _targetHeight {
+    if (widget.user?.heightCm == null) return '-- ft';
+    final baseCm = widget.user!.heightCm!;
+    // Если цель рост - накидываем ~2 дюйма (5 см). Иначе просто осанка (~2 см).
+    final targetCm = widget.user!.growthGoal == GrowthGoal.heightmaxx ? baseCm + 5.0 : baseCm + 2.0;
+    final ft = targetCm / 30.48;
+    return '${ft.toStringAsFixed(1)} ft';
+  }
+
+  double get _growthProgress => widget.user?.progressToNextLevel ?? 0.0;
+  int get _streakDays => widget.user?.streakDays ?? 0;
+  int get _level => widget.user?.level ?? 1;
+
+  // --- АНИМАЦИИ ---
   Widget _appearAnimation({required Widget child, required int index}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
@@ -47,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // --- UI СБОРКА ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,24 +88,23 @@ class _HomeScreenState extends State<HomeScreen> {
         slivers: [
           _buildSliverAppBar(),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _appearAnimation(index: 0, child: _buildWeeklyCalendar()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 1, child: _buildHeightProgressCard()),
+                // НОВАЯ КРУТАЯ ФИЧА: Дейлик
+                _appearAnimation(index: 1, child: _buildDailyQuestCard()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 2, child: _buildSectionHeader("Today's Plan")),
+                _appearAnimation(index: 2, child: _buildHeightProgressCard()),
+                const SizedBox(height: 24),
+                _appearAnimation(index: 3, child: _buildSectionHeader("Today's Plan")),
                 const SizedBox(height: 12),
-                _appearAnimation(index: 3, child: _buildMainWorkoutCard()),
+                _appearAnimation(index: 4, child: _buildMainWorkoutCard()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 4, child: _buildSectionHeader("Vital Stats")),
+                _appearAnimation(index: 5, child: _buildSectionHeader("Vital Stats")),
                 const SizedBox(height: 12),
-                _appearAnimation(index: 5, child: _buildBentoHabitsGrid()),
-                const SizedBox(height: 24),
-                _appearAnimation(index: 6, child: _buildActivityChart()),
-                const SizedBox(height: 24),
-                _appearAnimation(index: 7, child: _buildAIInsightCard()),
+                _appearAnimation(index: 6, child: _buildBentoHabitsGrid()),
               ]),
             ),
           ),
@@ -82,8 +113,180 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // --- КОМПОНЕНТЫ ---
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      pinned: true,
+      stretch: true,
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: false,
+        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_greeting, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  Text(
+                    "$_displayName 👋",
+                    style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 22, letterSpacing: -0.5),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.textPrimary,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: AppColors.textPrimary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+              ),
+              child: Text('LVL $_level', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // КРУТАЯ ФИЧА: Ежедневный Квест
+  Widget _buildDailyQuestCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accentSecondary.withOpacity(0.3), width: 2),
+        boxShadow: [BoxShadow(color: AppColors.accentSecondary.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppColors.accentSecondary.withOpacity(0.2), shape: BoxShape.circle),
+            child: const Icon(Icons.star_rounded, color: Colors.blueAccent, size: 28),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("DAILY QUEST", style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                SizedBox(height: 4),
+                Text("Complete 1 Stretch Session", style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10)),
+            child: const Text("+50 XP", style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ИСПРАВЛЕННЫЙ КАРД РОСТА (БОЛЬШЕ НЕТ OVERFLOW)
+  Widget _buildHeightProgressCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 12))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Expanded не даст тексту вылезти за края!
+              Expanded(child: _buildSimpleMetric('Current', _currentHeight, CrossAxisAlignment.start)),
+
+              _buildStreakBadge(),
+
+              Expanded(child: _buildSimpleMetric('Goal', _targetHeight, CrossAxisAlignment.end)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildPremiumProgressBar(_growthProgress),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('XP Progress', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('${(widget.user?.currentXp ?? 0)} / ${(widget.user?.xpToNextLevel ?? 100)}',
+                  style: const TextStyle(color: AppColors.accentPrimary, fontSize: 10, fontWeight: FontWeight.w900)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleMetric(String label, String value, CrossAxisAlignment alignment) {
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Text(label.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+        const SizedBox(height: 4),
+        // FittedBox сожмет текст, если он слишком длинный
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStreakBadge() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: Colors.orange.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
+          const SizedBox(width: 4),
+          Text('$_streakDays Days', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumProgressBar(double progress) {
+    return Container(
+      height: 14,
+      width: double.infinity,
+      decoration: BoxDecoration(color: AppColors.subtleBackground, borderRadius: BorderRadius.circular(10)),
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: progress.clamp(0.0, 1.0),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: const [BoxShadow(color: AppColors.accentGlow, blurRadius: 8, offset: Offset(0, 2))],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildWeeklyCalendar() {
     final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final startOfWeek = _today.subtract(Duration(days: _today.weekday - 1));
+
     return SizedBox(
       height: 90,
       child: ListView.builder(
@@ -92,6 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: 7,
         itemBuilder: (context, index) {
           final isSelected = index == _selectedDayIndex;
+          final dayDate = startOfWeek.add(Duration(days: index));
+          final isToday = dayDate.day == _today.day && dayDate.month == _today.month;
+
           return GestureDetector(
             onTap: () {
               setState(() => _selectedDayIndex = index);
@@ -99,41 +305,25 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              width: 60,
+              width: 65,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.accentPrimary : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.accentPrimary.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
+                    ? [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6))]
+                    : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    weekDays[index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white70 : AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${index + 20}',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(weekDays[index], style: TextStyle(color: isSelected ? Colors.white70 : AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  Text('${dayDate.day}', style: TextStyle(color: isSelected ? Colors.white : AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
+                  if (isToday && !isSelected) ...[
+                    const SizedBox(height: 4),
+                    Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppColors.accentPrimary, shape: BoxShape.circle)),
+                  ]
                 ],
               ),
             ),
@@ -143,190 +333,48 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActivityChart() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Weekly Activity',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-              ),
-              Icon(Icons.insights, color: AppColors.accentPrimary.withValues(alpha: 0.5)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: List.generate(7, (index) {
-              const bars = [40.0, 70.0, 50.0, 90.0, 60.0, 80.0, 30.0];
-              final barHeight = bars[index];
-              return Column(
-                children: [
-                  AnimatedContainer(
-                    duration: Duration(milliseconds: 600 + (index * 100)),
-                    height: barHeight,
-                    width: 12,
-                    decoration: BoxDecoration(
-                      gradient: index == 3 ? AppColors.primaryGradient : null,
-                      color: index == 3 ? null : AppColors.subtleBackground,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                  ),
-                ],
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: -0.5),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 110,
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        centerTitle: false,
-        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        title: Text(
-          "Hey, ${widget.user?.nickname ?? 'Mover'} 👋",
-          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeightProgressCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentPrimary.withValues(alpha: 0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSimpleMetric('Current', '175 cm'),
-              _buildStreakBadge(),
-              _buildSimpleMetric('Goal', '180 cm'),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumProgressBar(0.65),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleMetric(String label, String value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
-      ],
-    );
-  }
-
-  Widget _buildStreakBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: AppColors.accentPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-      child: Row(
-        children: [
-          const Text('🔥', style: TextStyle(fontSize: 14)),
-          const SizedBox(width: 4),
-          Text('$_streak Days', style: const TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumProgressBar(double progress) {
-    return Container(
-      height: 12,
-      width: double.infinity,
-      decoration: BoxDecoration(color: AppColors.subtleBackground, borderRadius: BorderRadius.circular(10)),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: progress,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: const [BoxShadow(color: AppColors.accentGlow, blurRadius: 10)],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildMainWorkoutCard() {
+    final focus = widget.user?.workoutFocus?.toUpperCase() ?? 'MIXED';
+
     return Container(
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentGlow.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.accentGlow.withOpacity(0.4), blurRadius: 24, offset: const Offset(0, 10))],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.onStartWorkout,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            if (widget.onStartWorkout != null) widget.onStartWorkout!();
+          },
           borderRadius: BorderRadius.circular(32),
-          child: const Padding(
-            padding: EdgeInsets.all(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('TODAY\'S SESSION', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.5)),
-                      SizedBox(height: 4),
-                      Text('Spine Decompression', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('$focus SESSION', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('Spine Decompression', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, height: 1.1)),
+                      const SizedBox(height: 8),
+                      Text('${widget.user?.workoutMinutesPerSession ?? 20} MIN • INTENSE', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
-                Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 50),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: const Icon(Icons.play_arrow_rounded, color: AppColors.accentPrimary, size: 36),
+                ),
               ],
             ),
           ),
@@ -335,79 +383,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: -0.5));
+  }
+
   Widget _buildBentoHabitsGrid() {
     return Row(
       children: [
         Expanded(
           child: _buildBentoCard(
-            icon: Icons.water_drop,
-            iconColor: Colors.blue,
-            title: 'Hydration',
-            value: '$_waterDrank ml',
-            progress: _waterDrank / _waterGoal,
+            icon: Icons.water_drop_rounded, iconColor: Colors.blueAccent, title: 'Water',
+            value: '${widget.user?.hydrationLevel == HydrationLevel.high ? '2.5' : '1.2'} L', progress: 0.6,
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildBentoCard(
-            icon: Icons.nightlight_round,
-            iconColor: Colors.purple,
-            title: 'Sleep',
-            value: '$_sleepHours h',
-            progress: _sleepHours / 9,
+            icon: Icons.nights_stay_rounded, iconColor: Colors.deepPurpleAccent, title: 'Sleep',
+            value: '${widget.user?.sleepQuality == SleepQuality.good ? '8.0' : '6.5'} h', progress: 0.8,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBentoCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String value,
-    required double progress,
-  }) {
+  Widget _buildBentoCard({required IconData icon, required Color iconColor, required String title, required String value, required double progress}) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(28)),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 12),
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: iconColor, size: 20)),
+          const SizedBox(height: 16),
           Text(title, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
-          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAIInsightCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.1)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, color: AppColors.accentPrimary, size: 18),
-              SizedBox(width: 8),
-              Text('AI INSIGHT', style: TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.w800, fontSize: 10)),
-            ],
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Your spine hydration is optimal today. Excellent job on your consistency streak!',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.4),
-          ),
+          const SizedBox(height: 2),
+          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 20)),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 6, borderRadius: BorderRadius.circular(3)),
         ],
       ),
     );

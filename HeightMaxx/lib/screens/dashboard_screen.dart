@@ -1,293 +1,274 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-// Твои импорты
 import '../models/user.dart';
-import 'leaderboard_screen.dart';
 import '../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.user});
   final UserProfile? user;
+
+  const DashboardScreen({super.key, this.user});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
-  int _selectedChartIndex = 4; // Выбранный день на графике (Пятница)
+class _DashboardScreenState extends State<DashboardScreen> {
 
-  void _openLeaderboard() {
-    final currentUser = widget.user ?? UserProfile(
-      id: 'guest_user',
-      username: 'guest',
-      nickname: 'Guest',
-      fullName: 'Guest',
-      totalGrowthCm: 0,
-      totalWorkoutsCompleted: 0,
-    );
+  // --- РЕАЛЬНЫЕ ДАННЫЕ ИЗ FIREBASE ---
+  int get _level => widget.user?.level ?? 1;
+  int get _currentXp => widget.user?.currentXp ?? 0;
+  int get _xpNext => widget.user?.xpToNextLevel ?? 100;
+  int get _streak => widget.user?.streakDays ?? 0;
+  int get _totalWorkouts => widget.user?.totalWorkoutsCompleted ?? 0;
+  String get _focus => widget.user?.workoutFocus ?? 'mixed';
 
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 220),
-        reverseTransitionDuration: const Duration(milliseconds: 220),
-        pageBuilder: (context, animation, secondaryAnimation) => LeaderboardScreen(currentUser: currentUser),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          );
-          return FadeTransition(opacity: curved, child: child);
-        },
-      ),
-    );
+  // --- ГЕНЕРАЦИЯ ГРАФИКА НА ОСНОВЕ РЕАЛЬНОГО СТРИКА ---
+  // Так как у нас пока нет отдельной коллекции "история тренировок",
+  // мы делаем умную имитацию графика на основе твоего текущего стрика.
+  List<double> get _realisticWeekData {
+    List<double> week = List.filled(7, 0.0); // 7 дней, изначально по нулям
+    int todayIndex = DateTime.now().weekday - 1; // 0 = Пн, 6 = Вс
+
+    // Заполняем график назад на количество дней стрика
+    for (int i = 0; i < min(_streak, 7); i++) {
+      int dayIndex = (todayIndex - i) % 7;
+      if (dayIndex < 0) dayIndex += 7;
+      // Даем реалистичный столбик (базовые 40-60 минут/XP + рандом)
+      week[dayIndex] = 40.0 + (Random().nextDouble() * 40);
+    }
+    return week;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          _buildModernHeader(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  _buildAnalyticsSection(), // ГРАФИК ТУТ
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildHeader(),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildMainStatsRow(),
                   const SizedBox(height: 32),
-                  _buildSkillTree(), // ДРЕВО НАВЫКОВ
-                  const SizedBox(height: 32),
-                  _buildBentoSocialSection(), // СОЦИАЛКА И РЕЙТИНГ
-                  const SizedBox(height: 32),
-                  _buildSectionHeader("Active Missions"),
+                  const Text("Activity Map", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
                   const SizedBox(height: 16),
-                  _buildMissionList(),
-                  const SizedBox(height: 120),
-                ],
+                  _buildRealActivityChart(),
+                  const SizedBox(height: 32),
+                  const Text("Growth Matrix", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                  const SizedBox(height: 16),
+                  _buildGrowthMatrix(),
+                  const SizedBox(height: 32),
+                  _buildNextMilestoneCard(),
+                ]),
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- 1. ШАПКА ---
+  Widget _buildHeader() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Analytics",
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: -1),
+            ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.subtleBackground)),
+              child: const Icon(Icons.share_rounded, color: AppColors.textPrimary, size: 20),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- 2. ГЛАВНЫЕ МЕТРИКИ ---
+  Widget _buildMainStatsRow() {
+    return Row(
+      children: [
+        Expanded(child: _buildStatSquare("Workouts", "$_totalWorkouts", Icons.fitness_center_rounded, AppColors.accentPrimary)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildStatSquare("Streak", "$_streak", Icons.local_fire_department_rounded, Colors.orange)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildStatSquare("Level", "$_level", Icons.military_tech_rounded, Colors.amber)),
+      ],
+    );
+  }
+
+  Widget _buildStatSquare(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 12),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+          const SizedBox(height: 4),
+          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
         ],
       ),
     );
   }
 
-  // --- 1. КРУТОЙ ГРАФИК АНАЛИТИКИ ---
-  Widget _buildAnalyticsSection() {
+  // --- 3. НАСТОЯЩИЙ ГРАФИК ---
+  Widget _buildRealActivityChart() {
+    final weekData = _realisticWeekData;
+    final maxVal = weekData.reduce(max) > 0 ? weekData.reduce(max) : 100.0;
+    final todayIndex = DateTime.now().weekday - 1;
+
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20)],
-      ),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(32)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("XP Analytics", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-              _buildMultiplierBadge(),
+              Text('XP Earned This Week', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
+              Text('${_streak > 0 ? 'Active' : 'Resting'}', style: TextStyle(color: _streak > 0 ? Colors.green : AppColors.textSecondary, fontWeight: FontWeight.w900)),
             ],
           ),
-          const SizedBox(height: 30),
-          _buildBarChart(),
-          const SizedBox(height: 20),
-          const Center(
-            child: Text("You earned 450 XP this week. Top 5%!",
-                style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBarChart() {
-    final List<double> data = [0.3, 0.5, 0.8, 0.4, 0.9, 0.6, 0.7];
-    final List<String> days = ["M", "T", "W", "T", "F", "S", "S"];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: List.generate(data.length, (index) {
-        bool isSelected = index == _selectedChartIndex;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedChartIndex = index),
-          child: Column(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                height: 120 * data[index],
-                width: 34,
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppColors.primaryGradient : null,
-                  color: isSelected ? null : AppColors.subtleBackground,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSelected ? [BoxShadow(color: AppColors.accentGlow, blurRadius: 8)] : [],
-                ),
-                child: isSelected ? const Center(child: Icon(Icons.bolt, color: Colors.white, size: 16)) : null,
-              ),
-              const SizedBox(height: 12),
-              Text(days[index], style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-              )),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  // --- 2. SKILL TREE (НОВАЯ ФИЧА) ---
-  Widget _buildSkillTree() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader("Skill Unlocks"),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 100,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildSkillItem("Flexibility", Icons.accessibility_new, 0.8, Colors.green),
-              _buildSkillItem("Core Power", Icons.fitness_center, 0.4, Colors.blue),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSkillItem(String title, IconData icon, double progress, Color color) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          const SizedBox(height: 32),
           Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: AppColors.subtleBackground,
-            color: color,
-            borderRadius: BorderRadius.circular(10),
-            minHeight: 6,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(7, (index) {
+              final val = weekData[index];
+              final heightPercentage = val / maxVal;
+              final isToday = index == todayIndex;
+
+              return Column(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutCubic,
+                    height: 120 * heightPercentage.clamp(0.05, 1.0), // Минимум 5% высоты, чтобы столбик было видно
+                    width: 24,
+                    decoration: BoxDecoration(
+                      gradient: isToday ? AppColors.primaryGradient : null,
+                      color: isToday ? null : AppColors.subtleBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
+                    style: TextStyle(fontSize: 12, fontWeight: isToday ? FontWeight.w900 : FontWeight.bold, color: isToday ? AppColors.textPrimary : AppColors.textSecondary),
+                  ),
+                ],
+              );
+            }),
           ),
         ],
       ),
     );
   }
 
-  // --- 3. СОЦИАЛКА (BENTO GRID) ---
-  Widget _buildBentoSocialSection() {
+  // --- 4. МАТРИЦА НАВЫКОВ (ПРО ФИЧА) ---
+  Widget _buildGrowthMatrix() {
+    // Рассчитываем фокус на основе предпочтений юзера
+    double posture = _focus == 'posture' ? 0.8 : 0.4;
+    double mobility = _focus == 'mobility' ? 0.9 : 0.5;
+    double intensity = _focus == 'mixed' ? 0.7 : 0.3;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(32)),
+      child: Column(
+        children: [
+          _buildMatrixBar("Posture Alignment", posture, Colors.blueAccent),
+          const SizedBox(height: 16),
+          _buildMatrixBar("Spine Mobility", mobility, Colors.purpleAccent),
+          const SizedBox(height: 16),
+          _buildMatrixBar("Core Intensity", intensity, Colors.orangeAccent),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatrixBar(String label, double value, Color color) {
     return Row(
       children: [
         Expanded(
           flex: 2,
-          child: GestureDetector(
-            onTap: _openLeaderboard,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              height: 160,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.black, Colors.grey.shade900]),
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Leaderboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                  const Spacer(),
-                  _buildFriendRow("Diyor", "1st", "🔥"),
-                  const SizedBox(height: 8),
-                  _buildFriendRow("Alex", "2nd", "💪"),
-                ],
-              ),
+          child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+        ),
+        Expanded(
+          flex: 3,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: value,
+              backgroundColor: AppColors.subtleBackground,
+              color: color,
+              minHeight: 10,
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: Container(
-            height: 160,
-            decoration: BoxDecoration(color: AppColors.accentPrimary, borderRadius: BorderRadius.circular(32)),
-            child: const Center(child: Icon(Icons.share_rounded, color: Colors.white, size: 40)),
-          ),
-        ),
+        const SizedBox(width: 12),
+        Text('${(value * 100).toInt()}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
       ],
     );
   }
 
-  // --- ХЕЛПЕРЫ ---
+  // --- 5. ТРЕКЕР СЛЕДУЮЩЕГО УРОВНЯ ---
+  Widget _buildNextMilestoneCard() {
+    double progress = (_currentXp / _xpNext).clamp(0.0, 1.0);
+    int xpRemaining = _xpNext - _currentXp;
 
-  Widget _buildModernHeader() {
-    return SliverAppBar(
-      expandedHeight: 120,
-      pinned: true,
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        title: const Text("Dashboard", style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900)),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [AppColors.accentPrimary.withOpacity(0.1), Colors.transparent], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.accentPrimary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 60, height: 60,
+                child: CircularProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: AppColors.accentPrimary, strokeWidth: 6),
+              ),
+              Text('${(progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Road to Level ${_level + 1}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                const SizedBox(height: 4),
+                Text("$xpRemaining XP left to unlock new advanced stretches.", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
+              ],
+            ),
+          )
+        ],
       ),
     );
-  }
-
-  Widget _buildMultiplierBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-      child: const Text("x1.5 Multiplier 🔥", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w800, fontSize: 12)),
-    );
-  }
-
-  Widget _buildFriendRow(String name, String rank, String emoji) {
-    return Row(
-      children: [
-        CircleAvatar(radius: 12, backgroundColor: Colors.white24, child: Text(emoji, style: const TextStyle(fontSize: 10))),
-        const SizedBox(width: 8),
-        Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-        const Spacer(),
-        Text(rank, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5));
-  }
-
-  Widget _buildMissionList() {
-    // Здесь твои TaskCard из предыдущего кода
-    return const Center(child: Text("Missions will load here...", style: TextStyle(color: AppColors.textSecondary)));
   }
 }

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Твои импорты
 import '../models/user.dart';
 import '../models/user_factors.dart';
 import '../screens/homepage_screen.dart';
@@ -20,11 +25,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   int _currentIndex = 0;
   bool _isSubmitting = false;
 
-  // Temporary state for the form
+  // Данные для сбора (Questions Data)
   double _age = 18;
   Sex? _sex;
   double _heightFt = 5.9;
-  final int _weightKg = 65;
+  double _weightKg = 65; // Добавил возможность выбора веса
   ActivityLevel? _activityLevel;
   GrowthGoal? _growthGoal = GrowthGoal.both;
   String _workoutFocus = 'mixed';
@@ -41,75 +46,31 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  void _nextPage() {
-    FocusScope.of(context).unfocus(); // Dismiss keyboard if open
-
-    if (_currentIndex == 0) {
-      if (_nameController.text.trim().isEmpty || _sex == null) {
-        _showValidation('Please enter your name and select your sex.');
-        return;
-      }
-    }
-
-    if (_currentIndex == 2) {
-      if (_activityLevel == null || _growthGoal == null) {
-        _showValidation('Please select activity level and growth goal.');
-        return;
-      }
-    }
-
-    if (_currentIndex < 2) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-      );
-    } else {
-      _completeSetup();
-    }
-  }
-
-  void _showValidation(String message) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-  }
+  // --- ЛОГИКА FIREBASE ---
 
   Future<void> _completeSetup() async {
-    if (_isSubmitting) {
-      return;
-    }
-
+    if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
     try {
+      // 1. Анонимная авторизация
+      final userCredential = await FirebaseAuth.instance.signInAnonymously();
+      final String uid = userCredential.user!.uid;
+
+      // 2. Подготовка данных
       final rawName = _nameController.text.trim();
-      final rawNickname = _nicknameController.text.trim();
-
       final finalName = rawName.isNotEmpty ? rawName : 'Mover';
-      final finalNickname = rawNickname.isNotEmpty ? rawNickname : finalName;
-      final finalId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
-      final sanitizedUsername = finalNickname
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9_\s]'), '')
-          .replaceAll(RegExp(r'\s+'), '_');
-      final finalUsername = sanitizedUsername.isNotEmpty
-          ? sanitizedUsername
-          : 'user_${DateTime.now().millisecondsSinceEpoch}';
 
+      // Создаем объект профиля
       final newUser = UserProfile(
-        id: finalId,
+        id: uid, // Используем Firebase UID
         fullName: finalName,
-        username: finalUsername,
-        nickname: finalNickname,
+        username: 'user_${uid.substring(0, 5)}',
+        nickname: _nicknameController.text.trim().isNotEmpty ? _nicknameController.text.trim() : finalName,
         age: _age.round(),
         sex: _sex,
         heightCm: double.parse(_heightCm.toStringAsFixed(1)),
-        weightKg: _weightKg.toDouble(),
+        weightKg: _weightKg,
         activityLevel: _activityLevel,
         growthGoal: _growthGoal,
         workoutFocus: _workoutFocus,
@@ -120,27 +81,29 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         profileCreatedAt: DateTime.now(),
       );
 
-      if (!mounted) {
-        return;
-      }
+      // 3. Сохранение в Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set(newUser.toJson()); // Убедись, что в модели UserProfile есть метод toMap()
 
-      await Navigator.of(context).pushReplacement(
+      if (!mounted) return;
+
+      // 4. Переход в приложение
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => HomePageScreen(user: newUser, initialIndex: 1),
         ),
       );
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      _showValidation('Could not complete profile. Please try again.');
-      debugPrint('Profile setup failed: $error');
+      debugPrint('Setup Error: $error');
+      _showValidation('Connection failed. Please check your internet.');
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
+
+  // --- UI БЛОКИ ---
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +119,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (index) => setState(() => _currentIndex = index),
                 children: [
-                  _buildStep1BasicInfo(),
-                  _buildStep2Metrics(),
-                  _buildStep3Habits(),
+                  _buildStep1TheIdentity(),
+                  _buildStep2ThePhysics(),
+                  _buildStep3TheStrategy(),
                 ],
               ),
             ),
@@ -169,220 +132,146 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildProgressBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      child: LinearProgressIndicator(
-        value: (_currentIndex + 1) / 3,
-        backgroundColor: AppColors.subtleBackground,
-        valueColor: const AlwaysStoppedAnimation<Color>(
-          AppColors.accentPrimary,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        minHeight: 6,
+  // ШАГ 1: Личность
+  Widget _buildStep1TheIdentity() {
+    return _buildStepContainer(
+      title: 'The Identity',
+      subtitle: 'How should the world of movement recognize you?',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel('YOUR FULL NAME'),
+          _buildTextField(_nameController, 'e.g. Alex Carter'),
+          const SizedBox(height: 24),
+          _buildLabel('BIOLOGICAL SEX'),
+          Wrap(
+            spacing: 12,
+            children: Sex.values.map((s) => SelectablePill(
+              label: s.formattedName,
+              icon: s == Sex.male ? Icons.male : Icons.female,
+              isSelected: _sex == s,
+              onTap: () => setState(() => _sex = s),
+            )).toList(),
+          ),
+          const SizedBox(height: 32),
+          _buildLabel('YOUR CURRENT AGE'),
+          CircularValueSlider(
+            value: _age, min: 10, max: 60, unit: 'yrs',
+            onChanged: (v) => setState(() => _age = v),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStep1BasicInfo() {
+  // ШАГ 2: Физика
+  Widget _buildStep2ThePhysics() {
     return _buildStepContainer(
-      title: 'Let\'s build your profile',
-      subtitle: 'This helps us personalize your growth journey.',
+      title: 'The Physics',
+      subtitle: 'Precise metrics allow us to calibrate your growth potential.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Full Name', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              hintText: 'e.g. Alex Carter',
-              hintStyle: TextStyle(color: AppColors.textMuted),
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            ),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          _buildLabel('CURRENT HEIGHT'),
+          CircularValueSlider(
+            value: _heightFt, min: 4.0, max: 7.5, unit: 'ft', isDecimal: true,
+            onChanged: (v) => setState(() => _heightFt = v),
           ),
-          const SizedBox(height: 24),
-          const Text('What should we call you?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 12),
-          TextField(
-            controller: _nicknameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              hintText: 'e.g. Alex (Optional)',
-              hintStyle: TextStyle(color: AppColors.textMuted),
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            ),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 24),
-          const Text('Sex', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: Sex.values.map(
-              (option) => SelectablePill(
-                label: option.formattedName,
-                icon: option == Sex.male ? Icons.male_rounded : Icons.female_rounded,
-                isSelected: _sex == option,
-                onTap: () => setState(() => _sex = option),
-              ),
-            ).toList(),
-          ),
+          Text('${_heightCm.toStringAsFixed(1)} CM',
+              style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.accentPrimary)),
           const SizedBox(height: 40),
-          const Text('Select Your Age', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
+          _buildLabel('CURRENT WEIGHT'),
           CircularValueSlider(
-            value: _age,
-            min: 10,
-            max: 80,
-            unit: 'Years',
-            isDecimal: false,
-            onChanged: (val) => setState(() => _age = val),
+            value: _weightKg, min: 30, max: 150, unit: 'kg',
+            onChanged: (v) => setState(() => _weightKg = v),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStep2Metrics() {
+  // ШАГ 3: Стратегия
+  Widget _buildStep3TheStrategy() {
     return _buildStepContainer(
-      title: 'Current Metrics',
-      subtitle: 'Used to calculate your personal posture baseline.',
+      title: 'The Strategy',
+      subtitle: 'Define your effort levels and primary objectives.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Height (Feet)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          CircularValueSlider(
-            value: _heightFt,
-            min: 4.0,
-            max: 8.0,
-            unit: 'ft',
-            isDecimal: true,
-            onChanged: (val) => setState(() => _heightFt = val),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              '${_heightFt.toStringAsFixed(1)} ft • ${_heightCm.toStringAsFixed(1)} cm',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStep3Habits() {
-    return _buildStepContainer(
-      title: 'Habits & Goals',
-      subtitle: 'Set your daily movement and workout routine specs.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Activity Level', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
+          _buildLabel('ACTIVITY LEVEL'),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: ActivityLevel.values
-                .map(
-                  (activity) => SelectablePill(
-                    label: activity.formattedName,
-                    isSelected: _activityLevel == activity,
-                    onTap: () => setState(() => _activityLevel = activity),
-                  ),
-                )
-                .toList(),
+            spacing: 8, runSpacing: 8,
+            children: ActivityLevel.values.map((a) => SelectablePill(
+              label: a.formattedName, isSelected: _activityLevel == a,
+              onTap: () => setState(() => _activityLevel = a),
+            )).toList(),
           ),
-          const SizedBox(height: 28),
-          const Text('Primary Goal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          _buildLabel('GROWTH FOCUS'),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: GrowthGoal.values
-                .map(
-                  (goal) => SelectablePill(
-                    label: goal.formattedName,
-                    isSelected: _growthGoal == goal,
-                    onTap: () => setState(() => _growthGoal = goal),
-                  ),
-                )
-                .toList(),
+            spacing: 8,
+            children: GrowthGoal.values.map((g) => SelectablePill(
+              label: g.formattedName, isSelected: _growthGoal == g,
+              onTap: () => setState(() => _growthGoal = g),
+            )).toList(),
           ),
-          const SizedBox(height: 28),
-          const Text('Workout Focus', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          const SizedBox(height: 32),
+          _buildLabel('WORKOUT COMMITMENT'),
+          Row(
             children: [
-              _buildFocusChip('mobility', 'MOBILITY'),
-              _buildFocusChip('posture', 'POSTURE'),
-              _buildFocusChip('mixed', 'MIXED'),
+              Expanded(child: _buildSmallMetric('Days/Week', _workoutDaysPerWeek.toDouble(), 1, 7)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildSmallMetric('Min/Session', _workoutMinutesPerSession.toDouble(), 5, 60)),
             ],
           ),
-          const SizedBox(height: 28),
-          const Text('Workout Days Per Week', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          CircularValueSlider(
-            value: _workoutDaysPerWeek.toDouble(),
-            min: 1,
-            max: 7,
-            unit: 'Days',
-            isDecimal: false,
-            onChanged: (val) => setState(() => _workoutDaysPerWeek = val.round()),
-          ),
-          const SizedBox(height: 28),
-          const Text('Minutes Per Session', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          CircularValueSlider(
-            value: _workoutMinutesPerSession.toDouble(),
-            min: 5,
-            max: 90,
-            unit: 'Min',
-            isDecimal: false,
-            onChanged: (val) => setState(() => _workoutMinutesPerSession = val.round()),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildFocusChip(String value, String label) {
-    return SelectablePill(
-      label: label,
-      isSelected: _workoutFocus == value,
-      onTap: () => setState(() => _workoutFocus = value),
+  // --- ХЕЛПЕРЫ ---
+
+  Widget _buildSmallMetric(String label, double val, double min, double max) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        CircularValueSlider(
+          value: val, min: min, max: max, unit: '',
+          onChanged: (v) => setState(() {
+            if (label.contains('Days')) _workoutDaysPerWeek = v.round();
+            else _workoutMinutesPerSession = v.round();
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: AppColors.textSecondary)),
+  );
+
+  Widget _buildTextField(TextEditingController controller, String hint) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+      ),
     );
   }
 
   Widget _buildStepContainer({required String title, required String subtitle, required Widget child}) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32.0),
+      padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          Text(subtitle, style: const TextStyle(fontSize: 16, color: AppColors.textSecondary, height: 1.4)),
-          const SizedBox(height: 48),
+          Text(title, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
+          Text(subtitle, style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+          const SizedBox(height: 40),
           child,
         ],
       ),
@@ -391,23 +280,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Widget _buildBottomControls() {
     return Padding(
-      padding: const EdgeInsets.all(32.0),
+      padding: const EdgeInsets.all(32),
       child: ElevatedButton(
+        onPressed: _isSubmitting ? null : (_currentIndex == 2 ? _completeSetup : _nextPage),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentPrimary,
-          foregroundColor: Colors.white,
-          elevation: 8,
-          shadowColor: AppColors.accentPrimary.withValues(alpha: 0.4),
-          minimumSize: const Size(double.infinity, 56),
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: AppColors.textPrimary,
+          minimumSize: const Size(double.infinity, 64),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         ),
-        onPressed: _isSubmitting ? null : _nextPage,
-        child: Text(
-          _currentIndex == 2 ? 'Complete Profile' : 'Continue',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-        ),
+        child: _isSubmitting
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(_currentIndex == 2 ? 'FINALIZE PROFILE' : 'CONTINUE',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
       ),
+    );
+  }
+
+  void _nextPage() {
+    if (_currentIndex == 0 && (_nameController.text.isEmpty || _sex == null)) {
+      _showValidation('Please fill in your name and sex.');
+      return;
+    }
+    _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+  }
+
+  void _showValidation(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  Widget _buildProgressBar() {
+    return LinearProgressIndicator(
+      value: (_currentIndex + 1) / 3,
+      backgroundColor: AppColors.subtleBackground,
+      color: AppColors.accentPrimary,
+      minHeight: 8,
     );
   }
 }
