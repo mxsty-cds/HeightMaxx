@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user.dart';
 import '../models/exercise.dart';
 import '../theme/app_colors.dart';
+import '../widgets/bubble_tap_effect.dart';
 import '../widgets/exercise_animation_view.dart';
 
 class WorkoutPlayerScreen extends StatefulWidget {
@@ -457,11 +458,12 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
                   : 0.3 + _pulseController.value * 0.25;
               final glowRadius = _isPaused ? 15.0 : 20.0 + _pulseController.value * 12;
 
-              return GestureDetector(
+              return BubbleTapEffect(
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   _isPaused ? _startTimer() : _pauseTimer();
                 },
+                borderRadius: BorderRadius.circular(45),
                 child: Container(
                   height: 90,
                   width: 90,
@@ -613,20 +615,22 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     return SizedBox(
       width: double.infinity,
       height: 60,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.textPrimary,
-          shape: RoundedRectangleBorder(
+      child: BubbleTapEffect(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.textPrimary,
             borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        onPressed: onTap,
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1,
+          alignment: Alignment.center,
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
         ),
       ),
