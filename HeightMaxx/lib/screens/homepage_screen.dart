@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:responsive_navigation_bar/responsive_navigation_bar.dart'; // НОВЫЙ ПАКЕТ
+import 'package:firebase_core/firebase_core.dart';
 
 // Firebase
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,6 +34,11 @@ class _HomePageScreenState extends State<HomePageScreen> {
     super.initState();
     _bottomNavIndex = widget.initialIndex;
 
+    if (Firebase.apps.isEmpty) {
+      _userStream = Stream.value(widget.user);
+      return;
+    }
+
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       _userStream = FirebaseFirestore.instance
@@ -41,11 +46,11 @@ class _HomePageScreenState extends State<HomePageScreen> {
           .doc(uid)
           .snapshots()
           .map((snapshot) {
-        if (snapshot.exists && snapshot.data() != null) {
-          return UserProfile.fromJson(snapshot.data()!);
-        }
-        return null;
-      });
+            if (snapshot.exists && snapshot.data() != null) {
+              return UserProfile.fromJson(snapshot.data()!);
+            }
+            return null;
+          });
     } else {
       _userStream = Stream.value(null);
     }
@@ -56,10 +61,13 @@ class _HomePageScreenState extends State<HomePageScreen> {
     return StreamBuilder<UserProfile?>(
       stream: _userStream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && widget.user == null) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            widget.user == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,
-            body: Center(child: CircularProgressIndicator(color: AppColors.accentPrimary)),
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.accentPrimary),
+            ),
           );
         }
 
@@ -75,10 +83,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           extendBody: true, // Позволяет контенту заезжать под бар
-          body: IndexedStack(
-            index: _bottomNavIndex,
-            children: pages,
-          ),
+          body: IndexedStack(index: _bottomNavIndex, children: pages),
 
           // НОВЫЙ RESPONSIVE NAVIGATION BAR
           bottomNavigationBar: ResponsiveNavigationBar(
@@ -88,13 +93,21 @@ class _HomePageScreenState extends State<HomePageScreen> {
               setState(() => _bottomNavIndex = index);
             },
             // Дизайн самого бара
-            backgroundColor: AppColors.surface.withOpacity(0.9),
+            backgroundColor: AppColors.surface.withValues(alpha: 0.9),
             backgroundBlur: 15.0, // Эффект стекла
-            outerPadding: const EdgeInsets.only(bottom: 24, left: 24, right: 24), // Плавающий эффект
+            outerPadding: const EdgeInsets.only(
+              bottom: 24,
+              left: 24,
+              right: 24,
+            ), // Плавающий эффект
             borderRadius: 24,
             activeIconColor: Colors.white,
             inactiveIconColor: AppColors.textSecondary,
-            textStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            textStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
 
             // Кнопки
             navigationBarButtons: const <NavigationBarButton>[

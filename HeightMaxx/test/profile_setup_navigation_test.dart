@@ -4,12 +4,10 @@ import 'package:heightmaxx/screens/homepage_screen.dart';
 import 'package:heightmaxx/screens/profile_setup_screen.dart';
 
 void main() {
-  testWidgets('Complete Profile navigates to HomePageScreen', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ProfileSetupScreen(),
-      ),
-    );
+  testWidgets('Complete Profile navigates to HomePageScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: ProfileSetupScreen()));
 
     await tester.enterText(find.byType(TextField).first, 'Alex Carter');
     final maleOption = find.text('Male');
@@ -29,17 +27,15 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Complete Profile'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.byType(HomePageScreen), findsOneWidget);
   });
 
-  testWidgets('Feet height is converted to cm in created profile', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ProfileSetupScreen(),
-      ),
-    );
+  testWidgets('Feet height is converted to cm in created profile', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: ProfileSetupScreen()));
 
     await tester.enterText(find.byType(TextField).first, 'Alex Carter');
     final maleOption = find.text('Male');
@@ -59,7 +55,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Complete Profile'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
 
     final homePage = tester.widget<HomePageScreen>(find.byType(HomePageScreen));
     expect(homePage.user, isNotNull);

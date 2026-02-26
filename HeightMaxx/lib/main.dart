@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Добавили этот импорт
@@ -12,11 +11,20 @@ import 'theme/app_colors.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Для проверки авторизации нам НУЖНО дождаться инициализации Firebase.
-  // Поэтому убираем unawaited и ждем завершения.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Инициализация Firebase должна быть идемпотентной:
+  // в некоторых средах [DEFAULT] уже создан до этого вызова.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } on FirebaseException catch (error) {
+    if (error.code != 'duplicate-app') {
+      rethrow;
+    }
+    Firebase.app();
+  }
 
   runApp(const MyApp());
 }
@@ -45,6 +53,10 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Firebase.apps.isEmpty) {
+      return const WelcomeScreen();
+    }
+
     // StreamBuilder слушает изменения в Auth: залогинился юзер или вышел
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
@@ -52,7 +64,9 @@ class AuthWrapper extends StatelessWidget {
         // Если Firebase еще проверяет состояние (загрузка)
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: AppColors.accentPrimary)),
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.accentPrimary),
+            ),
           );
         }
 

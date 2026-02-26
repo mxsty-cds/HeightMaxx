@@ -25,7 +25,8 @@ class WorkoutPlayerScreen extends StatefulWidget {
   State<WorkoutPlayerScreen> createState() => _WorkoutPlayerScreenState();
 }
 
-class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerProviderStateMixin {
+class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
+    with TickerProviderStateMixin {
   late int _currentIndex;
   late int _secondsRemaining;
   Timer? _timer;
@@ -72,7 +73,9 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
   void _startTimer() {
     _timer?.cancel();
     _isPaused = false;
-    _progressController.reverse(from: _secondsRemaining / widget.exercises[_currentIndex].durationSeconds);
+    _progressController.reverse(
+      from: _secondsRemaining / widget.exercises[_currentIndex].durationSeconds,
+    );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
@@ -160,27 +163,31 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
   @override
   Widget build(BuildContext context) {
     final current = widget.exercises[_currentIndex];
-    final next = (_currentIndex < widget.exercises.length - 1) ? widget.exercises[_currentIndex + 1] : null;
+    final next = (_currentIndex < widget.exercises.length - 1)
+        ? widget.exercises[_currentIndex + 1]
+        : null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           Positioned(
-            top: -50, right: -50,
+            top: -50,
+            right: -50,
             child: Container(
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.accentPrimary.withOpacity(0.05),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accentPrimary.withOpacity(0.1),
-                      blurRadius: 100, // Вот теперь Flutter понимает, что это размытие тени!
-                      spreadRadius: 20,
-                    )
-                  ]
+                shape: BoxShape.circle,
+                color: AppColors.accentPrimary.withValues(alpha: 0.05),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accentPrimary.withValues(alpha: 0.1),
+                    blurRadius:
+                        100, // Вот теперь Flutter понимает, что это размытие тени!
+                    spreadRadius: 20,
+                  ),
+                ],
               ),
             ),
           ),
@@ -201,9 +208,26 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const SizedBox(height: 20),
-                          Text(current.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: -1)),
+                          Text(
+                            current.name,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -1,
+                            ),
+                          ),
                           const SizedBox(height: 8),
-                          Text(_quotes[_currentIndex % _quotes.length], textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                          Text(
+                            _quotes[_currentIndex % _quotes.length],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(height: 48),
                           _buildTimerCircle(),
                           const SizedBox(height: 20),
@@ -252,7 +276,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
       alignment: Alignment.center,
       children: [
         SizedBox(
-          width: 300, height: 300,
+          width: 300,
+          height: 300,
           child: AnimatedBuilder(
             animation: _progressController,
             builder: (context, child) => CircularProgressIndicator(
@@ -260,7 +285,11 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
               strokeWidth: 15,
               strokeCap: StrokeCap.round,
               backgroundColor: AppColors.subtleBackground,
-              valueColor: AlwaysStoppedAnimation<Color>(_progressController.value < 0.2 ? Colors.redAccent : AppColors.accentPrimary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _progressController.value < 0.2
+                    ? Colors.redAccent
+                    : AppColors.accentPrimary,
+              ),
             ),
           ),
         ),
@@ -268,10 +297,23 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${_secondsRemaining.toString().padLeft(2, '0')}',
-              style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w900, color: AppColors.textPrimary, fontFeatures: [FontFeature.tabularFigures()]),
+              _secondsRemaining.toString().padLeft(2, '0'),
+              style: const TextStyle(
+                fontSize: 80,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
             ),
-            const Text('SECONDS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 2)),
+            const Text(
+              'SECONDS',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+                letterSpacing: 2,
+              ),
+            ),
           ],
         ),
       ],
@@ -295,13 +337,35 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('NEXT UP', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.accentPrimary, letterSpacing: 1)),
-                Text(next.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary), overflow: TextOverflow.ellipsis),
+                const Text(
+                  'NEXT UP',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.accentPrimary,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  next.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          Text('${next.durationSeconds}s', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textSecondary)),
+          Text(
+            '${next.durationSeconds}s',
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -317,10 +381,10 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
       };
     }
 
-    VoidCallback nextAction = () {
+    void nextAction() {
       HapticFeedback.lightImpact();
       _nextExercise();
-    };
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 30, top: 10, left: 40, right: 40),
@@ -336,16 +400,19 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: 90, width: 90,
+              height: 90,
+              width: 90,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppColors.primaryGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.accentPrimary.withOpacity(_isPaused ? 0.2 : 0.4),
+                    color: AppColors.accentPrimary.withValues(
+                      alpha: _isPaused ? 0.2 : 0.4,
+                    ),
                     blurRadius: _isPaused ? 15 : 25,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ],
               ),
               child: Center(
@@ -385,10 +452,10 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.8),
+            color: AppColors.surface.withValues(alpha: 0.8),
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppColors.subtleBackground.withOpacity(0.5),
+              color: AppColors.subtleBackground.withValues(alpha: 0.5),
               width: 1.5,
             ),
           ),
@@ -404,23 +471,53 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
       barrierDismissible: false,
       barrierLabel: "Victory",
       transitionDuration: const Duration(milliseconds: 600),
-      pageBuilder: (dialogContext, anim1, anim2) { // 2. ИСПРАВЛЕНИЕ КОНТЕКСТА ЗДЕСЬ
+      pageBuilder: (dialogContext, anim1, anim2) {
+        // 2. ИСПРАВЛЕНИЕ КОНТЕКСТА ЗДЕСЬ
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Center(
             child: Container(
               margin: const EdgeInsets.all(32),
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(40), border: Border.all(color: AppColors.accentPrimary.withOpacity(0.5))),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(
+                  color: AppColors.accentPrimary.withValues(alpha: 0.5),
+                ),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text("🏆", style: TextStyle(fontSize: 60)),
                   const SizedBox(height: 16),
-                  const Text("MISSION COMPLETE", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: AppColors.accentPrimary)),
+                  const Text(
+                    "MISSION COMPLETE",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: AppColors.accentPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  Text("+$xp XP", style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
-                  if (leveledUp) const Text("LEVEL UP!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.amber)),
+                  Text(
+                    "+$xp XP",
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (leveledUp)
+                    const Text(
+                      "LEVEL UP!",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.amber,
+                      ),
+                    ),
                   const SizedBox(height: 40),
                   _buildPrimaryButton("CLAIM REWARDS", () {
                     // Закрываем всё ПРАВИЛЬНО, чтобы не было крашей
@@ -438,11 +535,24 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> with TickerPr
 
   Widget _buildPrimaryButton(String text, VoidCallback onTap) {
     return SizedBox(
-      width: double.infinity, height: 60,
+      width: double.infinity,
+      height: 60,
       child: ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.textPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.textPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
         onPressed: onTap,
-        child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1)),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
       ),
     );
   }
