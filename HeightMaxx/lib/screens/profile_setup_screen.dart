@@ -150,25 +150,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildProgressBar(),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) => setState(() => _currentIndex = index),
-                children: [
-                  _buildStep1TheIdentity(),
-                  _buildStep2ThePhysics(),
-                  _buildStep3TheStrategy(),
-                ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A192F), // deep navy
+              Color(0xFF0D2B45), // mid navy-blue
+              Color(0xFF005BB5), // brand blue
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildProgressBar(),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) =>
+                      setState(() => _currentIndex = index),
+                  children: [
+                    _buildStep1TheIdentity(),
+                    _buildStep2ThePhysics(),
+                    _buildStep3TheStrategy(),
+                  ],
+                ),
               ),
-            ),
-            _buildBottomControls(),
-          ],
+              _buildBottomControls(),
+            ],
+          ),
         ),
       ),
     );
@@ -235,6 +248,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             style: const TextStyle(
               fontWeight: FontWeight.w900,
               color: AppColors.accentPrimary,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 40),
@@ -322,7 +336,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
         ),
         CircularValueSlider(
           value: val,
@@ -349,7 +363,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         fontSize: 13,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.2,
-        color: AppColors.textSecondary,
+        color: Colors.white70,
       ),
     ),
   );
@@ -357,13 +371,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget _buildTextField(TextEditingController controller, String hint) {
     return TextField(
       controller: controller,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
         ),
       ),
     );
@@ -375,23 +399,45 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     required Widget child,
   }) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Step indicator pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.accentPrimary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: AppColors.accentPrimary.withValues(alpha: 0.4)),
+            ),
+            child: Text(
+              'Step ${_currentIndex + 1} of 3',
+              style: const TextStyle(
+                color: AppColors.accentPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
             title,
             style: const TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.5,
+              color: Colors.white,
             ),
           ),
+          const SizedBox(height: 8),
           Text(
             subtitle,
             style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+              fontSize: 15,
+              color: Colors.white60,
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 40),
@@ -403,25 +449,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Widget _buildBottomControls() {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
       child: ElevatedButton(
         onPressed: _isSubmitting
             ? null
             : (_currentIndex == 2 ? _completeSetup : _nextPage),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.textPrimary,
+          backgroundColor: AppColors.accentPrimary,
+          foregroundColor: AppColors.textPrimary,
           minimumSize: const Size(double.infinity, 64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
+          elevation: 0,
         ),
         child: _isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? const CircularProgressIndicator(color: AppColors.textPrimary)
             : Text(
                 _currentIndex == 2 ? 'Complete Profile' : 'Continue',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w900,
+                  fontSize: 16,
                 ),
               ),
       ),
@@ -443,11 +492,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Widget _buildProgressBar() {
-    return LinearProgressIndicator(
-      value: (_currentIndex + 1) / 3,
-      backgroundColor: AppColors.subtleBackground,
-      color: AppColors.accentPrimary,
-      minHeight: 8,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: (_currentIndex + 1) / 3,
+          backgroundColor: Colors.white.withValues(alpha: 0.15),
+          color: AppColors.accentPrimary,
+          minHeight: 4,
+        ),
+      ),
     );
   }
 }
