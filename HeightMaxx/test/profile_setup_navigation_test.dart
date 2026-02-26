@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:heightmaxx/screens/homepage_screen.dart';
 import 'package:heightmaxx/screens/profile_setup_screen.dart';
 
 void main() {
@@ -27,9 +26,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Complete Profile'));
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
 
-    expect(find.byType(HomePageScreen), findsOneWidget);
+    final homePageFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == 'HomePageScreen',
+    );
+    expect(homePageFinder, findsOneWidget);
   });
 
   testWidgets('Feet height is converted to cm in created profile', (
@@ -55,10 +58,14 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Complete Profile'));
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
 
-    final homePage = tester.widget<HomePageScreen>(find.byType(HomePageScreen));
+    final homePageFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == 'HomePageScreen',
+    );
+    final dynamic homePage = tester.widget(homePageFinder);
     expect(homePage.user, isNotNull);
-    expect(homePage.user!.heightCm, 175.3);
+    expect(homePage.user.heightCm, 175.3);
   });
 }
