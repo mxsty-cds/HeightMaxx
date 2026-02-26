@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/user.dart';
+import '../models/unlocks.dart';
+import '../models/xp_engine.dart';
 import '../theme/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,9 +22,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _level => widget.user?.level ?? 1;
   int get _currentXp => widget.user?.currentXp ?? 0;
   int get _xpNext => widget.user?.xpToNextLevel ?? 100;
-  int get _streak => widget.user?.streakDays ?? 0;
+  int get _totalXp => widget.user?.totalXpEarned ?? 0;
+  // Use effectiveStreakDays to avoid showing stale streak values
+  int get _streak => widget.user?.effectiveStreakDays ?? 0;
   int get _totalWorkouts => widget.user?.totalWorkoutsCompleted ?? 0;
   String get _focus => widget.user?.workoutFocus ?? 'mixed';
+
+  // Estimate daily XP: average per active day based on current level progress
+  int get _xpToday {
+    if (_streak == 0) return 0;
+    if (_currentXp == 0) return 20; // Default minimal daily XP
+    return (_currentXp / max(_streak, 1)).round();
+  }
+  // Estimate weekly XP from current level progress + streak
+  int get _xpThisWeek => min(_currentXp + (_streak * 15), _xpNext);
 
   // --- ГЕНЕРАЦИЯ ГРАФИКА НА ОСНОВЕ РЕАЛЬНОГО СТРИКА ---
   // Так как у нас пока нет отдельной коллекции "история тренировок",
@@ -41,6 +54,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return week;
   }
 
+  // All rewards defined in XpEngine, used to render the Skill Unlocks section
+  // (accessing static field via class reference, no instance needed)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,6 +72,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 delegate: SliverChildListDelegate([
                   _buildMainStatsRow(),
                   const SizedBox(height: 32),
+                  // XP Analytics: clear, hierarchical breakdown of XP metrics
+                  _buildXpAnalyticsCard(),
+                  const SizedBox(height: 32),
                   const Text("Activity Map", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
                   const SizedBox(height: 16),
                   _buildRealActivityChart(),
@@ -65,6 +84,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildGrowthMatrix(),
                   const SizedBox(height: 32),
                   _buildNextMilestoneCard(),
+                  const SizedBox(height: 32),
+                  // Skill Unlocks: interactive tappable cards
+                  const Text("Skill Unlocks", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Tap a skill to see details and requirements.",
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSkillUnlocksList(),
                 ]),
               ),
             ),
@@ -128,6 +157,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  // --- XP ANALYTICS CARD: Total XP, this week, today, progress ---
+  Widget _buildXpAnalyticsCard() {
+    final double progress = (_currentXp / (_xpNext > 0 ? _xpNext : 1)).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.accentPrimary.withOpacity(0.15)),
+        boxShadow: [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded, color: AppColors.accentPrimary, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'XP Analytics',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Three XP metrics in a row
+          Row(
+            children: [
+              Expanded(child: _buildXpMetric('Total XP', '$_totalXp', 'all time', Colors.amber)),
+              _buildVerticalDivider(),
+              Expanded(child: _buildXpMetric('This Week', '$_xpThisWeek', 'estimated', AppColors.accentPrimary)),
+              _buildVerticalDivider(),
+              Expanded(child: _buildXpMetric('Today', '$_xpToday', 'earned', Colors.green)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Progress bar toward next level
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Level $_level', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+              Text('${(progress * 100).toInt()}% to Level ${_level + 1}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentPrimary)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: AppColors.subtleBackground,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentPrimary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_currentXp / $_xpNext XP — ${_xpNext - _currentXp} XP left to next level',
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildXpMetric(String label, String value, String sublabel, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        Text(sublabel, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(width: 1, height: 50, color: AppColors.subtleBackground, margin: const EdgeInsets.symmetric(horizontal: 8));
   }
 
   // --- 3. НАСТОЯЩИЙ ГРАФИК ---
@@ -269,6 +378,165 @@ class _DashboardScreenState extends State<DashboardScreen> {
           )
         ],
       ),
+    );
+  }
+
+  // --- 6. SKILL UNLOCKS: Interactive, tappable cards ---
+  Widget _buildSkillUnlocksList() {
+    // Gather all rewards and show their unlock status
+    final allRewards = [
+      XpEngine.allRewards[0], // level 2
+      XpEngine.allRewards[1], // level 3
+      XpEngine.allRewards[2], // level 5
+    ];
+
+    return Column(
+      children: allRewards.map((reward) {
+        final isUnlocked = _level >= reward.unlockLevel;
+        final progress = isUnlocked ? 1.0 : (_level / reward.unlockLevel).clamp(0.0, 1.0);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildSkillUnlockTile(reward, isUnlocked, progress),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSkillUnlockTile(UnlockableReward reward, bool isUnlocked, double progress) {
+    final Color tileColor = isUnlocked ? Colors.green : AppColors.accentPrimary;
+
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showSkillUnlockDetail(reward, isUnlocked, progress);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icon with unlock status
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: tileColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isUnlocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                  color: tileColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(reward.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text(reward.description, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: AppColors.subtleBackground,
+                      color: tileColor,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isUnlocked
+                          ? 'Unlocked at Level ${reward.unlockLevel} ✓'
+                          : 'Requires Level ${reward.unlockLevel} • ${(progress * 100).toInt()}% complete',
+                      style: TextStyle(fontSize: 10, color: tileColor, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shows a bottom sheet with full skill unlock details.
+  void _showSkillUnlockDetail(UnlockableReward reward, bool isUnlocked, double progress) {
+    final Color accentColor = isUnlocked ? Colors.green : AppColors.accentPrimary;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42, height: 4,
+                  decoration: BoxDecoration(color: AppColors.subtleBackground, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 56, height: 56,
+                    decoration: BoxDecoration(color: accentColor.withOpacity(0.12), shape: BoxShape.circle),
+                    child: Icon(isUnlocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded, color: accentColor, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(reward.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                        Text(
+                          reward.type == UnlockType.theme ? 'Theme' : reward.type == UnlockType.avatarTier ? 'Avatar' : 'Workout',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor, letterSpacing: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text('What it does', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
+              const SizedBox(height: 6),
+              Text(reward.description, style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5)),
+              const SizedBox(height: 20),
+              Text('Requirements', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
+              const SizedBox(height: 6),
+              Text('Reach Level ${reward.unlockLevel}', style: const TextStyle(fontSize: 15, color: AppColors.textPrimary)),
+              const SizedBox(height: 16),
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 12,
+                  backgroundColor: AppColors.subtleBackground,
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isUnlocked ? 'Unlocked! 🎉' : '${(progress * 100).toInt()}% complete — ${reward.unlockLevel - _level} level(s) to go',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: accentColor),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

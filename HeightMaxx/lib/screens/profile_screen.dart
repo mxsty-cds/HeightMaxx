@@ -24,7 +24,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // --- ХЕЛПЕРЫ ДЛЯ ДАННЫХ ---
   String get _nickname => widget.user?.nickname.isNotEmpty == true ? widget.user!.nickname : 'Mover';
   int get _level => widget.user?.level ?? 1;
-  String get _streak => '${widget.user?.streakDays ?? 0} Days';
+  // Use effectiveStreakDays to avoid showing stale streak values
+  String get _streak => '${widget.user?.effectiveStreakDays ?? 0} Days';
+
+  /// Maps level to a rank title so the profile doesn't show a hardcoded label.
+  String get _rankTitle {
+    if (_level >= 10) return 'ELITE MOVER';
+    if (_level >= 7) return 'APEX MOVER';
+    if (_level >= 4) return 'PRO MOVER';
+    if (_level >= 2) return 'JUNIOR MOVER';
+    return 'BEGINNER';
+  }
 
   // Конвертация в футы
   String get _heightFt {
@@ -189,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 24),
           Text(_nickname, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text('LEVEL $_level • APEX MOVER', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.5, color: AppColors.accentPrimary)),
+          Text('LEVEL $_level • $_rankTitle', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.5, color: AppColors.accentPrimary)),
         ],
       ),
     );

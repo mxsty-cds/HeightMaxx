@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/user.dart';
 import '../models/user_factors.dart';
 import '../theme/app_colors.dart';
+import '../widgets/ai_insight_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.user, this.onStartWorkout});
@@ -56,7 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   double get _growthProgress => widget.user?.progressToNextLevel ?? 0.0;
-  int get _streakDays => widget.user?.streakDays ?? 0;
+
+  // Use effectiveStreakDays to avoid showing stale streak values from Firebase
+  int get _streakDays => widget.user?.effectiveStreakDays ?? 0;
   int get _level => widget.user?.level ?? 1;
 
   // --- АНИМАЦИИ ---
@@ -91,20 +94,23 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _appearAnimation(index: 0, child: _buildWeeklyCalendar()),
+                // AI Insight is shown first for immediate, actionable guidance
+                _appearAnimation(index: 0, child: const AiInsightCard()),
+                const SizedBox(height: 24),
+                _appearAnimation(index: 1, child: _buildWeeklyCalendar()),
                 const SizedBox(height: 24),
                 // НОВАЯ КРУТАЯ ФИЧА: Дейлик
-                _appearAnimation(index: 1, child: _buildDailyQuestCard()),
+                _appearAnimation(index: 2, child: _buildDailyQuestCard()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 2, child: _buildHeightProgressCard()),
+                _appearAnimation(index: 3, child: _buildHeightProgressCard()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 3, child: _buildSectionHeader("Today's Plan")),
+                _appearAnimation(index: 4, child: _buildSectionHeader("Today's Plan")),
                 const SizedBox(height: 12),
-                _appearAnimation(index: 4, child: _buildMainWorkoutCard()),
+                _appearAnimation(index: 5, child: _buildMainWorkoutCard()),
                 const SizedBox(height: 24),
-                _appearAnimation(index: 5, child: _buildSectionHeader("Vital Stats")),
+                _appearAnimation(index: 6, child: _buildSectionHeader("Vital Stats")),
                 const SizedBox(height: 12),
-                _appearAnimation(index: 6, child: _buildBentoHabitsGrid()),
+                _appearAnimation(index: 7, child: _buildVitalStatsGrid()),
               ]),
             ),
           ),
@@ -249,6 +255,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStreakBadge() {
+    final streak = _streakDays;
+    // "Day 1" for streaks of 0 or 1 (first day or no activity yet — encouragement).
+    // "X Days" for established streaks.
+    final label = streak <= 1 ? 'Day 1' : '$streak Days';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -258,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
           const SizedBox(width: 4),
-          Text('$_streakDays Days', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 12)),
+          Text(label, style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 12)),
         ],
       ),
     );
@@ -283,53 +293,78 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Weekly calendar with activity dots indicating completed sessions.
   Widget _buildWeeklyCalendar() {
     final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final startOfWeek = _today.subtract(Duration(days: _today.weekday - 1));
+    final streak = _streakDays;
+    final todayIndex = _today.weekday - 1; // 0 = Mon
 
-    return SizedBox(
-      height: 90,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          final isSelected = index == _selectedDayIndex;
-          final dayDate = startOfWeek.add(Duration(days: index));
-          final isToday = dayDate.day == _today.day && dayDate.month == _today.month;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Weekly Activity',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 90,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: 7,
+            itemBuilder: (context, index) {
+              final isSelected = index == _selectedDayIndex;
+              final dayDate = startOfWeek.add(Duration(days: index));
+              final isToday = dayDate.day == _today.day && dayDate.month == _today.month;
+              // NOTE: Activity dots are approximated from the streak window.
+              // When per-day activity history is available, replace with real data.
+              // A day is "active" if it falls within the current streak window (today backwards)
+              final daysBeforeToday = todayIndex - index;
+              final wasActive = daysBeforeToday >= 0 && daysBeforeToday < streak;
 
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedDayIndex = index);
-              HapticFeedback.lightImpact();
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedDayIndex = index);
+                  HapticFeedback.lightImpact();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 65,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.accentPrimary : AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6))]
+                        : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(weekDays[index], style: TextStyle(color: isSelected ? Colors.white70 : AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 6),
+                      Text('${dayDate.day}', style: TextStyle(color: isSelected ? Colors.white : AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 4),
+                      // Activity dot: green if completed, accent if today, grey placeholder
+                      Container(
+                        width: 6, height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: wasActive
+                              ? (isSelected ? Colors.white : Colors.green)
+                              : (isToday && !isSelected ? AppColors.accentPrimary : Colors.transparent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 65,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.accentPrimary : AppColors.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: isSelected
-                    ? [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6))]
-                    : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(weekDays[index], style: TextStyle(color: isSelected ? Colors.white70 : AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 6),
-                  Text('${dayDate.day}', style: TextStyle(color: isSelected ? Colors.white : AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
-                  if (isToday && !isSelected) ...[
-                    const SizedBox(height: 4),
-                    Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppColors.accentPrimary, shape: BoxShape.circle)),
-                  ]
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -387,40 +422,97 @@ class _HomeScreenState extends State<HomeScreen> {
     return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textPrimary, letterSpacing: -0.5));
   }
 
-  Widget _buildBentoHabitsGrid() {
-    return Row(
+  /// Vital Stats grid: shows specific, labelled metrics with units.
+  Widget _buildVitalStatsGrid() {
+    final workoutsThisWeek = _streakDays.clamp(0, 7); // Approximate from streak
+    final xpToNext = widget.user?.xpToNextLevel ?? 100;
+    final currentXp = widget.user?.currentXp ?? 0;
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildBentoCard(
-            icon: Icons.water_drop_rounded, iconColor: Colors.blueAccent, title: 'Water',
-            value: '${widget.user?.hydrationLevel == HydrationLevel.high ? '2.5' : '1.2'} L', progress: 0.6,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildVitalStatTile(
+                icon: Icons.water_drop_rounded,
+                iconColor: Colors.blueAccent,
+                title: 'Hydration',
+                value: widget.user?.hydrationLevel == HydrationLevel.high ? '2.5 L' : '1.2 L',
+                subtitle: 'Today',
+                progress: widget.user?.hydrationLevel == HydrationLevel.high ? 0.85 : 0.45,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildVitalStatTile(
+                icon: Icons.nights_stay_rounded,
+                iconColor: Colors.deepPurpleAccent,
+                title: 'Sleep',
+                value: widget.user?.sleepQuality == SleepQuality.good ? '8.0 h' : '6.5 h',
+                subtitle: 'Last night',
+                progress: widget.user?.sleepQuality == SleepQuality.good ? 0.9 : 0.65,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildBentoCard(
-            icon: Icons.nights_stay_rounded, iconColor: Colors.deepPurpleAccent, title: 'Sleep',
-            value: '${widget.user?.sleepQuality == SleepQuality.good ? '8.0' : '6.5'} h', progress: 0.8,
-          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildVitalStatTile(
+                icon: Icons.fitness_center_rounded,
+                iconColor: Colors.orangeAccent,
+                title: 'Sessions',
+                value: '$workoutsThisWeek / 7',
+                subtitle: 'This week',
+                progress: workoutsThisWeek / 7,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildVitalStatTile(
+                icon: Icons.bolt_rounded,
+                iconColor: AppColors.accentPrimary,
+                title: 'XP to Next',
+                value: '${xpToNext - currentXp} XP',
+                subtitle: 'Level ${_level + 1}',
+                progress: currentXp / (xpToNext > 0 ? xpToNext : 1),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildBentoCard({required IconData icon, required Color iconColor, required String title, required String value, required double progress}) {
+  /// Reusable tile widget for a single vital stat with label, value, unit and progress.
+  Widget _buildVitalStatTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required String subtitle,
+    required double progress,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: iconColor, size: 20)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(title, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 20)),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(value: progress, backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 6, borderRadius: BorderRadius.circular(3)),
+          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600, fontSize: 10)),
+          const SizedBox(height: 10),
+          LinearProgressIndicator(value: progress.clamp(0.0, 1.0), backgroundColor: AppColors.subtleBackground, color: iconColor, minHeight: 6, borderRadius: BorderRadius.circular(3)),
         ],
       ),
     );

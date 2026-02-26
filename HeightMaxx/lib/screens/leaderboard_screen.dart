@@ -84,16 +84,38 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
             tooltip: 'Back',
           ),
-          const Expanded(
-            child: Text(
-              'Leaderboard',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.4,
-                color: AppColors.textPrimary,
-              ),
+          Expanded(
+            child: Column(
+              children: [
+                const Text(
+                  'Global Leaderboard',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                // User rank chip shown prominently in the header
+                if (_leaderboard.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "You're #$_currentUserRankIndex this week",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accentPrimary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 48),

@@ -103,7 +103,7 @@ class XpEngine {
   UnlockableReward? getNextUnlockHint(int currentLevel) {
     // Find the closest reward that requires a level greater than the current
     try {
-      return _allRewards.where((r) => r.unlockLevel > currentLevel)
+      return allRewards.where((r) => r.unlockLevel > currentLevel)
           .reduce((a, b) => a.unlockLevel < b.unlockLevel ? a : b);
     } catch (_) {
       return null; // No more rewards
@@ -112,12 +112,13 @@ class XpEngine {
 
   /// Returns all rewards granted precisely at a specific level.
   List<UnlockableReward> getUnlocksForLevel(int level) {
-    return _allRewards.where((r) => r.unlockLevel == level).toList();
+    return allRewards.where((r) => r.unlockLevel == level).toList();
   }
 
   // --- Mock Database of Rewards ---
   // TODO: Move this to a remote config or database service.
-  static const List<UnlockableReward> _allRewards = [
+  // Public so screens can reference reward definitions without duplicating them.
+  static const List<UnlockableReward> allRewards = [
     UnlockableReward(id: 'thm_skyline', type: UnlockType.theme, name: 'Skyline Theme', description: 'A sleek, urban dark mode.', unlockLevel: 2),
     UnlockableReward(id: 'wrk_advanced_core', type: UnlockType.workoutTier, name: 'Advanced Core', description: 'Deep stabilization routines.', unlockLevel: 3),
     UnlockableReward(id: 'ava_tier_2', type: UnlockType.avatarTier, name: 'Silver Avatar Tier', description: 'Unlock new avatar accessories.', unlockLevel: 5),
