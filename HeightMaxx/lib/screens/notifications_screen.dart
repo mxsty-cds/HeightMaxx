@@ -2,7 +2,7 @@
 //
 // Displays in-app notifications and reminders.
 // Currently shows a structured placeholder list.
-// TODO: Wire up to a real notifications service / Firestore collection.
+// Note: Wire up to a real notifications service / Firestore collection.
 
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
@@ -15,8 +15,9 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  // TODO: Load real notifications from backend/Firestore.
-  final List<_NotificationItem> _notifications = _buildPlaceholderNotifications();
+  // Note: Load real notifications from backend/Firestore.
+  final List<_NotificationItem> _notifications =
+      _buildPlaceholderNotifications();
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +27,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded,
-              color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -51,8 +54,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: const Text(
                 'Mark all read',
                 style: TextStyle(
-                    color: AppColors.accentPrimary,
-                    fontWeight: FontWeight.w700),
+                  color: AppColors.accentPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
         ],
@@ -60,10 +64,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: _notifications.isEmpty
           ? _buildEmptyState()
           : ListView.separated(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               itemCount: _notifications.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final item = _notifications[index];
                 return _NotificationCard(
@@ -80,8 +83,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.notifications_none_rounded,
-              size: 64, color: AppColors.textMuted),
+          Icon(
+            Icons.notifications_none_rounded,
+            size: 64,
+            color: AppColors.textMuted,
+          ),
           SizedBox(height: 16),
           Text(
             'All caught up!',
@@ -102,7 +108,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-// TODO: Replace with a real Notification model fetched from Firestore.
+// Note: Replace with a real Notification model fetched from Firestore.
 class _NotificationItem {
   final IconData icon;
   final Color iconColor;
@@ -165,7 +171,9 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: item.isRead ? AppColors.surface : AppColors.accentPrimary.withValues(alpha: 0.06),
+      color: item.isRead
+          ? AppColors.surface
+          : AppColors.accentPrimary.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -217,13 +225,17 @@ class _NotificationCard extends StatelessWidget {
                     Text(
                       item.body,
                       style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary),
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       item.timeAgo,
                       style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted),
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),

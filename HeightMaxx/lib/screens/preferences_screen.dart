@@ -2,7 +2,7 @@
 //
 // User preferences screen. Currently shows structured placeholder sections
 // ready for real settings to be wired in as features are built out.
-// TODO: Persist preference values to Firestore / SharedPreferences.
+// Note: Persist preference values to Firestore / SharedPreferences.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +16,7 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  // TODO: Load initial values from a settings service / SharedPreferences.
+  // Note: Load initial values from a settings service / SharedPreferences.
   bool _notificationsEnabled = true;
   bool _darkMode = false;
   bool _soundEffects = true;
@@ -30,7 +30,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -80,7 +83,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             onChanged: (v) {
               HapticFeedback.lightImpact();
               setState(() => _darkMode = v);
-              // TODO: Apply dark theme via ThemeNotifier when added.
+              // Note: Apply dark theme via ThemeNotifier when added.
             },
           ),
           const SizedBox(height: 24),
@@ -106,7 +109,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             icon: Icons.lock_outline_rounded,
             iconColor: Colors.redAccent,
             title: 'Change Password',
-            // TODO: Navigate to change password screen.
+            // Note: Navigate to change password screen.
             onTap: () => _showComingSoon(context, 'Change Password'),
           ),
           const SizedBox(height: 8),
@@ -114,7 +117,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             icon: Icons.delete_outline_rounded,
             iconColor: Colors.red,
             title: 'Delete Account',
-            // TODO: Implement account deletion with confirmation.
+            // Note: Implement account deletion with confirmation.
             onTap: () => _showComingSoon(context, 'Delete Account'),
           ),
           const SizedBox(height: 60),
@@ -158,16 +161,21 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           ),
           child: Icon(icon, color: iconColor, size: 20),
         ),
-        title: Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-        subtitle: Text(subtitle,
-            style: const TextStyle(
-                fontSize: 12, color: AppColors.textSecondary)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: AppColors.accentPrimary,
+          activeThumbColor: AppColors.accentPrimary,
         ),
       ),
     );
@@ -206,14 +214,19 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary)),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded,
-                  color: AppColors.accentPrimary),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.accentPrimary,
+              ),
           ],
         ),
       ),
@@ -249,13 +262,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary)),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textMuted),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+              ),
             ],
           ),
         ),

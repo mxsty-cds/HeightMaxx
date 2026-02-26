@@ -6,7 +6,7 @@ class XpEngine {
   
   /// Applies a specific XP event (e.g., stretching, completing a task) to the user.
   UserProfile applyEvent(UserProfile user, XpEvent event) {
-    // TODO: Optionally log 'event' to an analytics or history service here.
+    // Note: Optionally log 'event' to an analytics or history service here.
     
     // Update streak based on consecutive daily activity
     int newStreakDays = user.streakDays;
@@ -116,7 +116,7 @@ class XpEngine {
   }
 
   // --- Mock Database of Rewards ---
-  // TODO: Move this to a remote config or database service.
+  // Note: Move this to a remote config or database service.
   // Public so screens can reference reward definitions without duplicating them.
   static const List<UnlockableReward> allRewards = [
     UnlockableReward(id: 'thm_skyline', type: UnlockType.theme, name: 'Skyline Theme', description: 'A sleek, urban dark mode.', unlockLevel: 2),

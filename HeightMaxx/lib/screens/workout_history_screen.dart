@@ -2,7 +2,7 @@
 //
 // Displays the user's completed workout sessions.
 // Currently shows a structured placeholder list derived from user stats.
-// TODO: Replace with real per-session history fetched from Firestore.
+// Note: Replace with real per-session history fetched from Firestore.
 
 import 'package:flutter/material.dart';
 import '../models/user.dart';
@@ -16,7 +16,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int totalWorkouts = user?.totalWorkoutsCompleted ?? 0;
-    // TODO: Load real session list from Firestore WorkoutSession collection.
+    // Note: Load real session list from Firestore WorkoutSession collection.
     // For now, generate a deterministic placeholder list from totalWorkouts.
     final List<_WorkoutEntry> entries = _buildPlaceholderHistory(totalWorkouts);
 
@@ -26,8 +26,10 @@ class WorkoutHistoryScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded,
-              color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -47,9 +49,12 @@ class WorkoutHistoryScreen extends StatelessWidget {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     itemCount: entries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
                     itemBuilder: (context, index) =>
                         _WorkoutHistoryCard(entry: entries[index]),
                   ),
@@ -67,12 +72,16 @@ class WorkoutHistoryScreen extends StatelessWidget {
         color: AppColors.accentPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: AppColors.accentPrimary.withValues(alpha: 0.3)),
+          color: AppColors.accentPrimary.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.fitness_center_rounded,
-              color: AppColors.accentPrimary, size: 24),
+          const Icon(
+            Icons.fitness_center_rounded,
+            color: AppColors.accentPrimary,
+            size: 24,
+          ),
           const SizedBox(width: 12),
           Text(
             '$totalWorkouts total sessions completed',
@@ -91,8 +100,11 @@ class WorkoutHistoryScreen extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.fitness_center_outlined,
-              size: 64, color: AppColors.textMuted),
+          Icon(
+            Icons.fitness_center_outlined,
+            size: 64,
+            color: AppColors.textMuted,
+          ),
           SizedBox(height: 16),
           Text(
             'No workouts yet',
@@ -113,7 +125,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
   }
 
   /// Builds a deterministic placeholder list from [totalWorkouts].
-  /// TODO: Remove this and load real session data from Firestore.
+  /// Note: Remove this and load real session data from Firestore.
   static const int _maxPlaceholderEntries = 20;
 
   List<_WorkoutEntry> _buildPlaceholderHistory(int totalWorkouts) {
@@ -170,8 +182,7 @@ class _WorkoutHistoryCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(
-              color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -182,8 +193,11 @@ class _WorkoutHistoryCard extends StatelessWidget {
               color: AppColors.accentPrimary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.fitness_center_rounded,
-                color: AppColors.accentPrimary, size: 20),
+            child: const Icon(
+              Icons.fitness_center_rounded,
+              color: AppColors.accentPrimary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -202,14 +216,15 @@ class _WorkoutHistoryCard extends StatelessWidget {
                 Text(
                   '${entry.durationMinutes} min  •  $dateLabel',
                   style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.amber.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),

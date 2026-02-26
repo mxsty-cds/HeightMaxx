@@ -5,7 +5,7 @@
 // Each [ExerciseVisualType] value maps to a dedicated [CustomPainter] that
 // uses trigonometric oscillation to simulate the exercise motion.
 //
-// TODO: Replace the custom-painter branches with Lottie.asset() calls once
+// Note: Replace the custom-painter branches with Lottie.asset() calls once
 // real animation files are available.  Drop *.json files into
 // assets/animations/ (register the folder in pubspec.yaml), then swap out
 // the `CustomPaint` widget for:

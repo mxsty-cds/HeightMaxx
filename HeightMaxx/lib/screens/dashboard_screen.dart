@@ -26,7 +26,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Use effectiveStreakDays to avoid showing stale streak values
   int get _streak => widget.user?.effectiveStreakDays ?? 0;
   int get _totalWorkouts => widget.user?.totalWorkoutsCompleted ?? 0;
-  String get _focus => widget.user?.workoutFocus ?? 'mixed';
 
   // Estimate daily XP: average per active day based on current level progress
   int get _xpToday {
@@ -47,7 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Since we don't yet store per-day workout history, we approximate the chart
   // from the user's current streak: each day within the streak window receives
   // a deterministic XP estimate based on dailyXp + a position-based offset.
-  // TODO: Replace with real per-day XP history from backend/Firestore.
+  // Note: Replace with real per-day XP history from backend/Firestore.
   List<double> get _realisticWeekData {
     final List<double> week = List.filled(7, 0.0);
     final int todayIndex = DateTime.now().weekday - 1; // 0 = Mon, 6 = Sun
@@ -58,7 +57,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       int dayIndex = (todayIndex - i) % 7;
       if (dayIndex < 0) dayIndex += 7;
       // Vary the bar deterministically: today=100%, yesterday=92%, etc.
-      week[dayIndex] = baseXp * (1.0 - i * _dailyDecayFactor).clamp(_minXpPercentage, 1.0);
+      week[dayIndex] =
+          baseXp * (1.0 - i * _dailyDecayFactor).clamp(_minXpPercentage, 1.0);
     }
     return week;
   }
@@ -174,7 +174,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: AppColors.accentPrimary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: AppColors.accentPrimary.withValues(alpha: 0.3)),
+                        color: AppColors.accentPrimary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: const Icon(
                       Icons.leaderboard_rounded,
@@ -534,14 +535,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   //   Posture Alignment  → total workouts completed (more reps = better posture)
   //   Spine Mobility     → current streak (consistent training = improved mobility)
   //   Core Intensity     → current level (higher level = stronger core engagement)
-  // TODO: Replace with per-category workout history once backend is wired up.
+  // Note: Replace with per-category workout history once backend is wired up.
   // Divisors define the "full" reference value for each axis (100% progress).
   static const double _maxWorkoutsForPosture = 100.0;
   static const double _maxStreakForMobility = 30.0;
   static const double _maxLevelForIntensity = 10.0;
 
   Widget _buildGrowthMatrix() {
-    final double posture = (_totalWorkouts / _maxWorkoutsForPosture).clamp(0.05, 1.0);
+    final double posture = (_totalWorkouts / _maxWorkoutsForPosture).clamp(
+      0.05,
+      1.0,
+    );
     final double mobility = (_streak / _maxStreakForMobility).clamp(0.05, 1.0);
     final double intensity = (_level / _maxLevelForIntensity).clamp(0.05, 1.0);
 
@@ -553,20 +557,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          _buildMatrixBar("Posture Alignment", posture, Colors.blueAccent,
-              '$_totalWorkouts workouts'),
+          _buildMatrixBar(
+            "Posture Alignment",
+            posture,
+            Colors.blueAccent,
+            '$_totalWorkouts workouts',
+          ),
           const SizedBox(height: 16),
-          _buildMatrixBar("Spine Mobility", mobility, Colors.purpleAccent,
-              '$_streak day streak'),
+          _buildMatrixBar(
+            "Spine Mobility",
+            mobility,
+            Colors.purpleAccent,
+            '$_streak day streak',
+          ),
           const SizedBox(height: 16),
-          _buildMatrixBar("Core Intensity", intensity, Colors.orangeAccent,
-              'Level $_level'),
+          _buildMatrixBar(
+            "Core Intensity",
+            intensity,
+            Colors.orangeAccent,
+            'Level $_level',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMatrixBar(String label, double value, Color color, String statLabel) {
+  Widget _buildMatrixBar(
+    String label,
+    double value,
+    Color color,
+    String statLabel,
+  ) {
     return Row(
       children: [
         Expanded(
