@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
+import '../widgets/gradient_button.dart';
 import 'profile_setup_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -45,9 +48,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Используем светлый фон в стиле Bento UI
+    // Use theme background color for consistent branding
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -106,41 +109,23 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   Widget _buildGetStartedButton() {
     return SizedBox(
+      key: const ValueKey("GetStartedBtn"),
       width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        key: const ValueKey("GetStartedBtn"),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2DCCA7),
-          elevation: 8,
-          shadowColor: const Color(0xFF2DCCA7).withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
+      child: GradientButton(
+        label: 'Get Started',
+        borderRadius: AppTheme.radiusLG,
         onPressed: () {
-          // ВОТ ТУТ МЕНЯЕМ КОД:
-          // Осуществляем плавный переход на экран ProfileSetupScreen
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const ProfileSetupScreen(),
             ),
           );
         },
-        child: const Text(
-          "Get Started",
-          style: TextStyle(
-            fontSize: 20,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
       ),
     );
   }
 
-  // Простая кнопка "Next" для остальных слайдов
+  // Simple "Next" button for intermediate slides
   Widget _buildNextButton() {
     return SizedBox(
       key: const ValueKey("NextBtn"),
@@ -157,7 +142,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           "Next",
           style: TextStyle(
             fontSize: 18,
-            color: Color(0xFF7B8BB2), // Мягкий серый цвет
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -165,20 +150,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // Виджет для точек внизу экрана с улучшенной анимацией
+  // Page indicator dots with animated width
   Widget buildDot({required int index}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       margin: const EdgeInsets.only(right: 8),
       height: 8,
-      // Активная точка длиннее
       width: _currentPage == index ? 28 : 8,
       decoration: BoxDecoration(
-        // Активная - сине-зеленая, неактивные - светло-серые
         color: _currentPage == index
-            ? const Color(0xFF2DCCA7)
-            : const Color(0xFFD8DCE8),
+            ? AppColors.accentPrimary
+            : AppColors.subtleBackground,
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -248,49 +231,39 @@ class _SplashContentState extends State<SplashContent>
               height: 200,
               width: 200,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 shape: BoxShape.circle,
-                // Мягкая тень в стиле Bento UI
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2DCCA7).withValues(alpha: 0.15),
+                    // accentGlow is ~30% alpha; use 15% for a subtler shadow
+                    color: AppColors.accentPrimary.withValues(alpha: 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, 15),
                   ),
                 ],
               ),
-              // Пока иконка, потом заменишь на Image.asset(...)
               child: Icon(
                 widget.iconData,
                 size: 100,
-                color: const Color(0xFF2DCCA7),
+                color: AppColors.accentPrimary,
               ),
             ),
           ),
           const Spacer(flex: 2),
-          // --- Текстовый блок ---
-          // (Здесь можно добавить анимацию появления, но для начала хватит и плавающей иконки)
+          // --- Title & description ---
           Text(
             widget.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: AppTheme.headline2.copyWith(
               fontSize: 26,
-              // Если подключишь google_fonts: GoogleFonts.poppins(...)
-              color: Color(0xFF2C3A58),
-              // Темно-синий цвет текста
-              fontWeight: FontWeight.w800,
-              height: 1.2,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             widget.text,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF7B8BB2), // Мягкий серый
-              height: 1.5,
-            ),
+            style: AppTheme.bodyText2.copyWith(fontSize: 16),
           ),
           const Spacer(flex: 1),
         ],

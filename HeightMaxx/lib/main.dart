@@ -7,6 +7,7 @@ import 'firebase_options.dart'; // Не забудь про этот файл!
 // Твои экраны
 import 'screens/welcome_screen.dart';
 import 'theme/app_colors.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,10 +38,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'HeightMaxx',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
-      ),
+      theme: AppTheme.themeData,
       // Здесь происходит магия проверки
       home: const AuthWrapper(),
     );

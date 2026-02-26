@@ -10,6 +10,7 @@ import '../screens/homepage_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/circular_value_slider.dart';
 import '../widgets/selectable_pill.dart';
+import '../widgets/gradient_button.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -450,29 +451,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget _buildBottomControls() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
-      child: ElevatedButton(
+      child: GradientButton(
+        label: _currentIndex == 2 ? 'Complete Profile' : 'Continue',
+        height: 64,
+        borderRadius: 24,
+        isLoading: _isSubmitting,
         onPressed: _isSubmitting
             ? null
             : (_currentIndex == 2 ? _completeSetup : _nextPage),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentPrimary,
-          foregroundColor: AppColors.textPrimary,
-          minimumSize: const Size(double.infinity, 64),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          elevation: 0,
-        ),
-        child: _isSubmitting
-            ? const CircularProgressIndicator(color: AppColors.textPrimary)
-            : Text(
-                _currentIndex == 2 ? 'Complete Profile' : 'Continue',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                ),
-              ),
       ),
     );
   }
