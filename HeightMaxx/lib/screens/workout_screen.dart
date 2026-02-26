@@ -306,13 +306,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
   }
 
   /// Returns a representative icon for the body area targeted.
+  /// Uses exact keyword matching to avoid partial-match false positives.
   IconData _bodyAreaIcon(String bodyArea) {
     final area = bodyArea.toLowerCase();
-    if (area.contains('spine') || area.contains('back')) return Icons.airline_seat_flat_rounded;
-    if (area.contains('core') || area.contains('abs')) return Icons.sports_gymnastics_rounded;
-    if (area.contains('leg') || area.contains('hamstring')) return Icons.directions_run_rounded;
+    // Exact keyword checks — ordered from most specific to least specific
+    if (area.contains('lower back')) return Icons.airline_seat_flat_rounded;
+    if (area.contains('full spine') || area.contains('spine')) return Icons.airline_seat_flat_rounded;
+    if (area.contains('back')) return Icons.airline_seat_flat_rounded;
+    if (area.contains('core')) return Icons.sports_gymnastics_rounded;
+    if (area.contains('hamstring') || area.contains('legs') || area.contains('leg')) return Icons.directions_run_rounded;
     if (area.contains('shoulder') || area.contains('chest')) return Icons.sports_handball_rounded;
-    if (area.contains('hip')) return Icons.rotate_90_degrees_ccw_rounded;
+    if (area.contains('hips') || area.contains('hip')) return Icons.rotate_90_degrees_ccw_rounded;
     return Icons.self_improvement_rounded; // default: full body / stretching
   }
 

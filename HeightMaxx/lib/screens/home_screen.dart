@@ -256,6 +256,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildStreakBadge() {
     final streak = _streakDays;
+    // "Day 1" for streaks of 0 or 1 (first day or no activity yet — encouragement).
+    // "X Days" for established streaks.
+    final label = streak <= 1 ? 'Day 1' : '$streak Days';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -265,11 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
           const SizedBox(width: 4),
-          // Show "Day 1" for new streak, "X Days" for ongoing
-          Text(
-            streak <= 1 ? 'Day ${streak == 0 ? 1 : streak}' : '$streak Days',
-            style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 12),
-          ),
+          Text(label, style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 12)),
         ],
       ),
     );
@@ -319,7 +318,9 @@ class _HomeScreenState extends State<HomeScreen> {
               final isSelected = index == _selectedDayIndex;
               final dayDate = startOfWeek.add(Duration(days: index));
               final isToday = dayDate.day == _today.day && dayDate.month == _today.month;
-              // A day is "active" if it falls within the current streak window
+              // NOTE: Activity dots are approximated from the streak window.
+              // When per-day activity history is available, replace with real data.
+              // A day is "active" if it falls within the current streak window (today backwards)
               final daysBeforeToday = todayIndex - index;
               final wasActive = daysBeforeToday >= 0 && daysBeforeToday < streak;
 

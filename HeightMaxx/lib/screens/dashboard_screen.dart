@@ -28,8 +28,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _totalWorkouts => widget.user?.totalWorkoutsCompleted ?? 0;
   String get _focus => widget.user?.workoutFocus ?? 'mixed';
 
-  // Estimate daily XP as a fraction of weekly (streak-based)
-  int get _xpToday => _streak > 0 ? (_currentXp > 0 ? (_currentXp / max(_streak, 1)).round() : 20) : 0;
+  // Estimate daily XP: average per active day based on current level progress
+  int get _xpToday {
+    if (_streak == 0) return 0;
+    if (_currentXp == 0) return 20; // Default minimal daily XP
+    return (_currentXp / max(_streak, 1)).round();
+  }
   // Estimate weekly XP from current level progress + streak
   int get _xpThisWeek => min(_currentXp + (_streak * 15), _xpNext);
 
