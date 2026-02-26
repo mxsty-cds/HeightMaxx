@@ -44,11 +44,41 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
     if (!mounted) return;
     setState(() {
       _routine = const [
-        Exercise(id: 'e1', name: 'Hanging exercise', durationSeconds: 30),
-        Exercise(id: 'e2', name: 'Cobra stretch', durationSeconds: 45),
-        Exercise(id: 'e3', name: 'Forward bend', durationSeconds: 30),
-        Exercise(id: 'e4', name: 'Spine stretch', durationSeconds: 60),
-        Exercise(id: 'e5', name: 'Jump training', durationSeconds: 40),
+        Exercise(
+          id: 'e1',
+          name: 'Hanging exercise',
+          durationSeconds: 30,
+          bodyArea: 'Spine',
+          description: 'Decompress the vertebrae by hanging from a bar. Lengthens the spine and relieves disc pressure.',
+        ),
+        Exercise(
+          id: 'e2',
+          name: 'Cobra stretch',
+          durationSeconds: 45,
+          bodyArea: 'Lower Back',
+          description: 'Extend the lower back gently while lying face-down. Improves lumbar flexibility and posture.',
+        ),
+        Exercise(
+          id: 'e3',
+          name: 'Forward bend',
+          durationSeconds: 30,
+          bodyArea: 'Hamstrings & Back',
+          description: 'Reach toward your toes from a standing position. Stretches the posterior chain and improves flexibility.',
+        ),
+        Exercise(
+          id: 'e4',
+          name: 'Spine stretch',
+          durationSeconds: 60,
+          bodyArea: 'Full Spine',
+          description: 'Seated forward reach targeting the full length of the spine. Increases spinal mobility and decompression.',
+        ),
+        Exercise(
+          id: 'e5',
+          name: 'Jump training',
+          durationSeconds: 40,
+          bodyArea: 'Legs & Core',
+          description: 'Explosive jump sets that stimulate growth plates and strengthen the lower body for better posture.',
+        ),
       ];
       _isLoading = false;
     });
@@ -206,18 +236,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      // Индекс и иконка
+                      // Exercise icon with order number
                       Container(
                         width: 64, height: 64,
                         decoration: BoxDecoration(
                           gradient: AppColors.primaryGradient.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.accentPrimary),
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_bodyAreaIcon(exercise.bodyArea), size: 20, color: AppColors.accentPrimary),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${index + 1}',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.accentPrimary),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -226,18 +261,34 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(exercise.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
+                            // Body area and duration in a single row
                             Row(
                               children: [
-                                Icon(Icons.av_timer_rounded, size: 14, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text('${exercise.durationSeconds}s', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                                const SizedBox(width: 12),
-                                Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textMuted)),
-                                const SizedBox(width: 12),
-                                Text(index < 2 ? 'Stretching' : 'Growth', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                                Icon(Icons.place_rounded, size: 12, color: AppColors.textMuted),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    exercise.bodyArea,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Icon(Icons.av_timer_rounded, size: 12, color: AppColors.textMuted),
+                                const SizedBox(width: 3),
+                                Text('${exercise.durationSeconds}s', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                               ],
                             ),
+                            if (exercise.description.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                exercise.description,
+                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -252,6 +303,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
         childCount: _routine.length,
       ),
     );
+  }
+
+  /// Returns a representative icon for the body area targeted.
+  IconData _bodyAreaIcon(String bodyArea) {
+    final area = bodyArea.toLowerCase();
+    if (area.contains('spine') || area.contains('back')) return Icons.airline_seat_flat_rounded;
+    if (area.contains('core') || area.contains('abs')) return Icons.sports_gymnastics_rounded;
+    if (area.contains('leg') || area.contains('hamstring')) return Icons.directions_run_rounded;
+    if (area.contains('shoulder') || area.contains('chest')) return Icons.sports_handball_rounded;
+    if (area.contains('hip')) return Icons.rotate_90_degrees_ccw_rounded;
+    return Icons.self_improvement_rounded; // default: full body / stretching
   }
 
   Widget _buildShimmerList() {

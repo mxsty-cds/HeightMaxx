@@ -105,6 +105,20 @@ class UserProfile {
     return (currentXp / xpToNextLevel).clamp(0.0, 1.0);
   }
 
+  /// Returns streak only if user was active today or yesterday.
+  /// Prevents stale Firebase values from showing incorrect streak counts.
+  int get effectiveStreakDays {
+    if (lastActiveDate == null) return 0;
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final lastMidnight = DateTime(
+      lastActiveDate!.year, lastActiveDate!.month, lastActiveDate!.day,
+    );
+    final daysDiff = todayMidnight.difference(lastMidnight).inDays;
+    // Streak is valid if user was active today or yesterday
+    return daysDiff <= 1 ? streakDays : 0;
+  }
+
   UserProfile copyWith({
     String? id,
     String? fullName,
