@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user.dart';
 import '../models/exercise.dart';
 import '../theme/app_colors.dart';
+import '../widgets/exercise_animation_view.dart';
 
 class WorkoutPlayerScreen extends StatefulWidget {
   final List<Exercise> exercises;
@@ -32,8 +33,14 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
   Timer? _timer;
   bool _isPaused = false;
 
+  /// Drives the circular progress ring (reverses from 1→0 over the exercise).
   late AnimationController _progressController;
+  /// Drives the fade/slide transition between exercises.
   late AnimationController _fadeController;
+  /// Drives the looping stick-figure animation for the current exercise.
+  late AnimationController _animController;
+  /// Drives the pulsing glow ring behind the timer while the timer is running.
+  late AnimationController _pulseController;
 
   final List<String> _quotes = [
     "Visualize your spine lengthening...",
@@ -56,8 +63,18 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
 
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     )..forward();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
 
     _startTimer();
   }
@@ -67,12 +84,16 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     _timer?.cancel();
     _progressController.dispose();
     _fadeController.dispose();
+    _animController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   void _startTimer() {
     _timer?.cancel();
     _isPaused = false;
+    _animController.repeat();
+    _pulseController.repeat(reverse: true);
     _progressController.reverse(
       from: _secondsRemaining / widget.exercises[_currentIndex].durationSeconds,
     );
@@ -91,6 +112,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     HapticFeedback.lightImpact();
     _timer?.cancel();
     _progressController.stop();
+    _animController.stop();
+    _pulseController.stop();
     setState(() => _isPaused = true);
   }
 
@@ -103,6 +126,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
           _progressController.duration = Duration(seconds: _secondsRemaining);
         });
         _fadeController.forward();
+        _animController.reset();
         _startTimer();
       });
     } else {
@@ -119,12 +143,13 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
           _progressController.duration = Duration(seconds: _secondsRemaining);
         });
         _fadeController.forward();
+        _animController.reset();
         _startTimer();
       });
     }
   }
 
-  // --- ЛОГИКА ЗАВЕРШЕНИЯ (BACKEND) ---
+  // --- Backend: finish workout & award XP ----------------------------------
   Future<void> _finishWorkout() async {
     _timer?.cancel();
     HapticFeedback.heavyImpact();
@@ -160,6 +185,10 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     _showVictoryScreen(totalXP, leveledUp);
   }
 
+  // =========================================================================
+  // Build
+  // =========================================================================
+
   @override
   Widget build(BuildContext context) {
     final current = widget.exercises[_currentIndex];
@@ -171,20 +200,40 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
+          // Background decorative blob
           Positioned(
-            top: -50,
-            right: -50,
+            top: -60,
+            right: -60,
             child: Container(
-              width: 250,
-              height: 250,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accentPrimary.withValues(alpha: 0.05),
+                color: AppColors.accentPrimary.withValues(alpha: 0.04),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.accentPrimary.withValues(alpha: 0.1),
-                    blurRadius:
-                        100, // Вот теперь Flutter понимает, что это размытие тени!
+                    color: AppColors.accentPrimary.withValues(alpha: 0.08),
+                    blurRadius: 120,
+                    spreadRadius: 30,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Second background blob (bottom-left)
+          Positioned(
+            bottom: -80,
+            left: -60,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accentSecondary.withValues(alpha: 0.04),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accentSecondary.withValues(alpha: 0.07),
+                    blurRadius: 100,
                     spreadRadius: 20,
                   ),
                 ],
@@ -196,49 +245,41 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
             child: Column(
               children: [
                 _buildTopBar(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
-                // Обернули в скролл, чтобы на маленьких экранах не было ошибки переполнения!
                 Expanded(
                   child: FadeTransition(
                     opacity: _fadeController,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20),
-                          Text(
-                            current.name,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -1,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: _fadeController,
+                        curve: Curves.easeOut,
+                      )),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 16),
+                            _ExerciseTitleSection(
+                              name: current.name,
+                              bodyArea: current.bodyArea,
+                              quote: _quotes[_currentIndex % _quotes.length],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _quotes[_currentIndex % _quotes.length],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 48),
-                          _buildTimerCircle(),
-                          const SizedBox(height: 20),
-                        ],
+                            const SizedBox(height: 36),
+                            _buildTimerWithAnimation(current),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                if (next != null) _buildNextUpCard(next),
-
+                if (next != null) _NextUpCard(exercise: next),
                 _buildControls(),
               ],
             ),
@@ -248,131 +289,145 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     );
   }
 
+  // =========================================================================
+  // Top bar
+  // =========================================================================
+
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       child: Row(
         children: [
           _glassIconButton(Icons.close_rounded, () => Navigator.pop(context)),
-          const SizedBox(width: 20),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: LinearProgressIndicator(
-                value: (_currentIndex + 1) / widget.exercises.length,
-                minHeight: 8,
-                backgroundColor: AppColors.subtleBackground,
-                color: AppColors.accentPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimerCircle() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        SizedBox(
-          width: 300,
-          height: 300,
-          child: AnimatedBuilder(
-            animation: _progressController,
-            builder: (context, child) => CircularProgressIndicator(
-              value: _progressController.value,
-              strokeWidth: 15,
-              strokeCap: StrokeCap.round,
-              backgroundColor: AppColors.subtleBackground,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                _progressController.value < 0.2
-                    ? Colors.redAccent
-                    : AppColors.accentPrimary,
-              ),
-            ),
-          ),
-        ),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _secondsRemaining.toString().padLeft(2, '0'),
-              style: const TextStyle(
-                fontSize: 80,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-            const Text(
-              'SECONDS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textSecondary,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNextUpCard(Exercise next) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.subtleBackground),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.next_plan_outlined, color: AppColors.accentPrimary),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'NEXT UP',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: LinearProgressIndicator(
+                    value: (_currentIndex + 1) / widget.exercises.length,
+                    minHeight: 7,
+                    backgroundColor: AppColors.subtleBackground,
                     color: AppColors.accentPrimary,
-                    letterSpacing: 1,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  next.name,
+                  '${_currentIndex + 1} / ${widget.exercises.length}',
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.5,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            '${next.durationSeconds}s',
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              color: AppColors.textSecondary,
-            ),
-          ),
         ],
       ),
     );
   }
 
+  // =========================================================================
+  // Timer + animated figure
+  // =========================================================================
+
+  Widget _buildTimerWithAnimation(Exercise current) {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final pulseScale = _isPaused
+            ? 1.0
+            : 1.0 + _pulseController.value * 0.055;
+        final pulseAlpha = _isPaused
+            ? 0.0
+            : 0.12 + _pulseController.value * 0.18;
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Pulsing glow ring
+            Transform.scale(
+              scale: pulseScale,
+              child: Container(
+                width: 310,
+                height: 310,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accentPrimary.withValues(alpha: pulseAlpha),
+                      blurRadius: 48,
+                      spreadRadius: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Progress ring
+            SizedBox(
+              width: 300,
+              height: 300,
+              child: AnimatedBuilder(
+                animation: _progressController,
+                builder: (context, _) => CircularProgressIndicator(
+                  value: _progressController.value,
+                  strokeWidth: 14,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: AppColors.subtleBackground,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _progressController.value < 0.2
+                        ? Colors.redAccent
+                        : AppColors.accentPrimary,
+                  ),
+                ),
+              ),
+            ),
+
+            // Inner content: animated figure + timer label
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ExerciseAnimationView(
+                  exercise: current,
+                  animation: _animController,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _secondsRemaining.toString().padLeft(2, '0'),
+                  style: const TextStyle(
+                    fontSize: 44,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const Text(
+                  'SECONDS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // =========================================================================
+  // Controls
+  // =========================================================================
+
   Widget _buildControls() {
-    // 1. ЖЕЛЕЗОБЕТОННОЕ ИСПРАВЛЕНИЕ ТИПОВ ДЛЯ КНОПОК
     VoidCallback? prevAction;
     if (_currentIndex > 0) {
       prevAction = () {
@@ -393,46 +448,54 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
         children: [
           _glassIconButton(Icons.skip_previous_rounded, prevAction),
 
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              _isPaused ? _startTimer() : _pauseTimer();
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: 90,
-              width: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.primaryGradient,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.accentPrimary.withValues(
-                      alpha: _isPaused ? 0.2 : 0.4,
+          // Play / pause button with animated glow
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final glowAlpha = _isPaused
+                  ? 0.2
+                  : 0.3 + _pulseController.value * 0.25;
+              final glowRadius = _isPaused ? 15.0 : 20.0 + _pulseController.value * 12;
+
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _isPaused ? _startTimer() : _pauseTimer();
+                },
+                child: Container(
+                  height: 90,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: AppColors.primaryGradient,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accentPrimary.withValues(alpha: glowAlpha),
+                        blurRadius: glowRadius,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, anim) => RotationTransition(
+                        turns: child.key == const ValueKey('pause')
+                            ? Tween<double>(begin: 0.75, end: 1.0).animate(anim)
+                            : Tween<double>(begin: 0.5, end: 1.0).animate(anim),
+                        child: ScaleTransition(scale: anim, child: child),
+                      ),
+                      child: Icon(
+                        _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                        key: ValueKey(_isPaused ? 'play' : 'pause'),
+                        color: Colors.white,
+                        size: 45,
+                      ),
                     ),
-                    blurRadius: _isPaused ? 15 : 25,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, anim) => RotationTransition(
-                    turns: child.key == const ValueKey('pause')
-                        ? Tween<double>(begin: 0.75, end: 1.0).animate(anim)
-                        : Tween<double>(begin: 0.5, end: 1.0).animate(anim),
-                    child: ScaleTransition(scale: anim, child: child),
-                  ),
-                  child: Icon(
-                    _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    key: ValueKey(_isPaused ? 'play' : 'pause'),
-                    color: Colors.white,
-                    size: 45,
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
 
           _glassIconButton(Icons.skip_next_rounded, nextAction),
@@ -440,6 +503,10 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
       ),
     );
   }
+
+  // =========================================================================
+  // Shared helpers
+  // =========================================================================
 
   Widget _glassIconButton(IconData icon, VoidCallback? onTap) {
     final bool isDisabled = onTap == null;
@@ -452,18 +519,29 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.8),
+            color: AppColors.surface.withValues(alpha: 0.85),
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppColors.subtleBackground.withValues(alpha: 0.5),
+              color: AppColors.subtleBackground.withValues(alpha: 0.6),
               width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Icon(icon, color: AppColors.textPrimary, size: 28),
         ),
       ),
     );
   }
+
+  // =========================================================================
+  // Victory screen
+  // =========================================================================
 
   void _showVictoryScreen(int xp, bool leveledUp) {
     showGeneralDialog(
@@ -472,7 +550,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
       barrierLabel: "Victory",
       transitionDuration: const Duration(milliseconds: 600),
       pageBuilder: (dialogContext, anim1, anim2) {
-        // 2. ИСПРАВЛЕНИЕ КОНТЕКСТА ЗДЕСЬ
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Center(
@@ -520,7 +597,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
                     ),
                   const SizedBox(height: 40),
                   _buildPrimaryButton("CLAIM REWARDS", () {
-                    // Закрываем всё ПРАВИЛЬНО, чтобы не было крашей
                     Navigator.of(dialogContext).pop();
                     Navigator.of(context).pop();
                   }),
@@ -557,3 +633,163 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen>
     );
   }
 }
+
+// =============================================================================
+// Extracted sub-widgets
+// =============================================================================
+
+/// Displays the exercise name, body-area chip, and motivational quote.
+class _ExerciseTitleSection extends StatelessWidget {
+  final String name;
+  final String bodyArea;
+  final String quote;
+
+  const _ExerciseTitleSection({
+    required this.name,
+    required this.bodyArea,
+    required this.quote,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Column(
+        children: [
+          // Body-area chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.accentPrimary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.accentPrimary.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Text(
+              bodyArea.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppColors.accentPrimary,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Exercise name
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.8,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Motivational quote
+          Text(
+            quote,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Next up" card shown at the bottom of the screen.
+class _NextUpCard extends StatelessWidget {
+  final Exercise exercise;
+
+  const _NextUpCard({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.subtleBackground),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.accentPrimary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.next_plan_outlined,
+              color: AppColors.accentPrimary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'NEXT UP',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.accentPrimary,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  exercise.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.subtleBackground,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${exercise.durationSeconds}s',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

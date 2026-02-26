@@ -52,6 +52,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           bodyArea: 'Spine',
           description:
               'Decompress the vertebrae by hanging from a bar. Lengthens the spine and relieves disc pressure.',
+          visualType: ExerciseVisualType.hanging,
         ),
         Exercise(
           id: 'e2',
@@ -60,6 +61,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           bodyArea: 'Lower Back',
           description:
               'Extend the lower back gently while lying face-down. Improves lumbar flexibility and posture.',
+          visualType: ExerciseVisualType.cobraStretch,
         ),
         Exercise(
           id: 'e3',
@@ -68,6 +70,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           bodyArea: 'Hamstrings & Back',
           description:
               'Reach toward your toes from a standing position. Stretches the posterior chain and improves flexibility.',
+          visualType: ExerciseVisualType.forwardBend,
         ),
         Exercise(
           id: 'e4',
@@ -76,6 +79,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           bodyArea: 'Full Spine',
           description:
               'Seated forward reach targeting the full length of the spine. Increases spinal mobility and decompression.',
+          visualType: ExerciseVisualType.spineStretch,
         ),
         Exercise(
           id: 'e5',
@@ -84,6 +88,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           bodyArea: 'Legs & Core',
           description:
               'Explosive jump sets that stimulate growth plates and strengthen the lower body for better posture.',
+          visualType: ExerciseVisualType.jumpTraining,
         ),
       ];
       _isLoading = false;
