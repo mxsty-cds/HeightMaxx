@@ -8,6 +8,7 @@ import '../models/user.dart';
 import '../models/user_factors.dart';
 import '../screens/homepage_screen.dart';
 import '../theme/app_colors.dart';
+import '../utils/measurement_utils.dart';
 import '../widgets/circular_value_slider.dart';
 import '../widgets/selectable_pill.dart';
 import '../widgets/gradient_button.dart';
@@ -29,15 +30,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   // Данные для сбора (Questions Data)
   double _age = 18;
   Sex? _sex;
-  double _heightFt = 5.9;
-  double _weightKg = 65; // Добавил возможность выбора веса
+  int _heightFeet = 5;
+  int _heightInches = 9;
+  double _weightLbs = 143; // ~65 kg
   ActivityLevel? _activityLevel;
   GrowthGoal? _growthGoal = GrowthGoal.both;
   final String _workoutFocus = 'mixed';
   int _workoutDaysPerWeek = 4;
   int _workoutMinutesPerSession = 20;
 
-  double get _heightCm => _heightFt * 30.48;
+  double get _heightCm =>
+      MeasurementUtils.feetInchesToCm(_heightFeet, _heightInches);
+  double get _weightKg => MeasurementUtils.lbsToKg(_weightLbs);
 
   @override
   void dispose() {
@@ -235,17 +239,56 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       child: Column(
         children: [
           _buildLabel('CURRENT HEIGHT'),
-          CircularValueSlider(
-            value: _heightFt,
-            min: 4.0,
-            max: 7.5,
-            unit: 'ft',
-            isDecimal: true,
-            onChanged: (v) => setState(() => _heightFt = v),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    const Text(
+                      'Feet',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70),
+                    ),
+                    CircularValueSlider(
+                      value: _heightFeet.toDouble(),
+                      min: 3,
+                      max: 8,
+                      unit: 'ft',
+                      onChanged: (v) =>
+                          setState(() => _heightFeet = v.round()),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    const Text(
+                      'Inches',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70),
+                    ),
+                    CircularValueSlider(
+                      value: _heightInches.toDouble(),
+                      min: 0,
+                      max: 11,
+                      unit: 'in',
+                      onChanged: (v) =>
+                          setState(() => _heightInches = v.round()),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
-            '${_heightCm.toStringAsFixed(1)} CM',
+            "$_heightFeet' $_heightInches\"",
             style: const TextStyle(
               fontWeight: FontWeight.w900,
               color: AppColors.accentPrimary,
@@ -255,11 +298,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           const SizedBox(height: 40),
           _buildLabel('CURRENT WEIGHT'),
           CircularValueSlider(
-            value: _weightKg,
-            min: 30,
-            max: 150,
-            unit: 'kg',
-            onChanged: (v) => setState(() => _weightKg = v),
+            value: _weightLbs,
+            min: 66,
+            max: 330,
+            unit: 'lb',
+            onChanged: (v) => setState(() => _weightLbs = v),
           ),
         ],
       ),

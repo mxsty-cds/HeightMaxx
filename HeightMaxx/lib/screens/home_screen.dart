@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/user.dart';
 import '../models/user_factors.dart';
 import '../theme/app_colors.dart';
+import '../utils/measurement_utils.dart';
 import '../widgets/ai_insight_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -42,22 +43,18 @@ class _HomeScreenState extends State<HomeScreen> {
         : widget.user!.fullName.split(' ').first;
   }
 
-  // Переводим CM в FT на лету! (1 фут = 30.48 см)
-  String get _currentHeight {
-    if (widget.user?.heightCm == null) return '-- ft';
-    final ft = widget.user!.heightCm! / 30.48;
-    return '${ft.toStringAsFixed(1)} ft';
-  }
+  // Переводим CM в FT + дюймы для отображения (1 дюйм = 2.54 см)
+  String get _currentHeight =>
+      MeasurementUtils.formatHeight(widget.user?.heightCm);
 
   String get _targetHeight {
-    if (widget.user?.heightCm == null) return '-- ft';
+    if (widget.user?.heightCm == null) return "--' --\"";
     final baseCm = widget.user!.heightCm!;
     // Если цель рост - накидываем ~2 дюйма (5 см). Иначе просто осанка (~2 см).
     final targetCm = widget.user!.growthGoal == GrowthGoal.heightmaxx
         ? baseCm + 5.0
         : baseCm + 2.0;
-    final ft = targetCm / 30.48;
-    return '${ft.toStringAsFixed(1)} ft';
+    return MeasurementUtils.formatHeight(targetCm);
   }
 
   double get _growthProgress => widget.user?.progressToNextLevel ?? 0.0;
