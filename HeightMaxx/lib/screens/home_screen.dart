@@ -670,9 +670,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Vital Stats grid: shows specific, labelled metrics with units.
   Widget _buildVitalStatsGrid() {
-    final workoutsThisWeek = _streakDays.clamp(0, 7); // Approximate from streak
-    final xpToNext = widget.user?.xpToNextLevel ?? 100;
-    final currentXp = widget.user?.currentXp ?? 0;
+    // Sleep: map the user's profile-level quality enum to a deterministic
+    // estimate. No per-night log exists yet; this is the best user-specific
+    // value available without random numbers.
+    final double sleepHours;
+    switch (widget.user?.sleepQuality) {
+      case SleepQuality.good:
+        sleepHours = 8.0;
+      case SleepQuality.average:
+        sleepHours = 6.5;
+      case SleepQuality.poor:
+        sleepHours = 5.0;
+      default:
+        sleepHours = 0.0;
+    }
+    const double sleepGoalH = 8.0;
+
+    // Sessions: user's weekly target from their profile; completed count is 0
+    // until a per-week session log is implemented.
+    // TODO(sessions): Replace 0 with real weekly session count when session
+    // tracking is implemented.
+    final int sessionsTarget = widget.user?.workoutDaysPerWeek ?? 7;
+
+    // XP: remaining points until the next level, derived from stored fields.
+    final int xpRemaining =
+        (widget.user?.xpToNextLevel ?? 100) - (widget.user?.currentXp ?? 0);
 
     return Column(
       children: [
@@ -683,13 +705,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.water_drop_rounded,
                 iconColor: Colors.blueAccent,
                 title: 'Hydration',
-                value: widget.user?.hydrationLevel == HydrationLevel.high
-                    ? '2.5 L'
-                    : '1.2 L',
+                // TODO(hydration): Replace with real daily intake when
+                // hydration tracking is implemented.
+                value: '0 L',
                 subtitle: 'Today',
-                progress: widget.user?.hydrationLevel == HydrationLevel.high
-                    ? 0.85
-                    : 0.45,
+                progress: 0.0,
               ),
             ),
             const SizedBox(width: 16),
@@ -698,13 +718,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.nights_stay_rounded,
                 iconColor: Colors.deepPurpleAccent,
                 title: 'Sleep',
-                value: widget.user?.sleepQuality == SleepQuality.good
-                    ? '8.0 h'
-                    : '6.5 h',
+                value: sleepHours > 0
+                    ? '${sleepHours.toStringAsFixed(1)} h'
+                    : '-- h',
                 subtitle: 'Last night',
-                progress: widget.user?.sleepQuality == SleepQuality.good
-                    ? 0.9
-                    : 0.65,
+                progress: sleepHours / sleepGoalH,
               ),
             ),
           ],
@@ -717,9 +735,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.fitness_center_rounded,
                 iconColor: Colors.orangeAccent,
                 title: 'Sessions',
-                value: '$workoutsThisWeek / 7',
+                // TODO(sessions): Replace 0 with real weekly session count.
+                value: '0 / $sessionsTarget',
                 subtitle: 'This week',
-                progress: workoutsThisWeek / 7,
+                progress: 0.0,
               ),
             ),
             const SizedBox(width: 16),
@@ -728,9 +747,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.bolt_rounded,
                 iconColor: AppColors.accentPrimary,
                 title: 'XP to Next',
-                value: '${xpToNext - currentXp} XP',
+                value: '$xpRemaining XP',
                 subtitle: 'Level ${_level + 1}',
-                progress: currentXp / (xpToNext > 0 ? xpToNext : 1),
+                progress: widget.user?.progressToNextLevel ?? 0.0,
               ),
             ),
           ],
