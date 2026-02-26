@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' show max, min;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -6,6 +6,7 @@ import '../models/user.dart';
 import '../models/unlocks.dart';
 import '../models/xp_engine.dart';
 import '../theme/app_colors.dart';
+import 'leaderboard_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserProfile? user;
@@ -37,19 +38,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Estimate weekly XP from current level progress + streak
   int get _xpThisWeek => min(_currentXp + (_streak * 15), _xpNext);
 
-  // --- ГЕНЕРАЦИЯ ГРАФИКА НА ОСНОВЕ РЕАЛЬНОГО СТРИКА ---
-  // Так как у нас пока нет отдельной коллекции "история тренировок",
-  // мы делаем умную имитацию графика на основе твоего текущего стрика.
-  List<double> get _realisticWeekData {
-    List<double> week = List.filled(7, 0.0); // 7 дней, изначально по нулям
-    int todayIndex = DateTime.now().weekday - 1; // 0 = Пн, 6 = Вс
+  // Decay factor per day back in the streak: today=100%, yesterday=92%, etc.
+  static const double _dailyDecayFactor = 0.08;
+  // Minimum percentage of base XP shown for older streak days.
+  static const double _minXpPercentage = 0.5;
 
-    // Заполняем график назад на количество дней стрика
-    for (int i = 0; i < min(_streak, 7); i++) {
+  // --- CHART DATA DERIVED FROM REAL STREAK (NO RANDOM) ---
+  // Since we don't yet store per-day workout history, we approximate the chart
+  // from the user's current streak: each day within the streak window receives
+  // a deterministic XP estimate based on dailyXp + a position-based offset.
+  // TODO: Replace with real per-day XP history from backend/Firestore.
+  List<double> get _realisticWeekData {
+    final List<double> week = List.filled(7, 0.0);
+    final int todayIndex = DateTime.now().weekday - 1; // 0 = Mon, 6 = Sun
+    final int activeDays = min(_streak, 7);
+    final double baseXp = max(_xpToday.toDouble(), 20.0);
+
+    for (int i = 0; i < activeDays; i++) {
       int dayIndex = (todayIndex - i) % 7;
       if (dayIndex < 0) dayIndex += 7;
-      // Даем реалистичный столбик (базовые 40-60 минут/XP + рандом)
-      week[dayIndex] = 40.0 + (Random().nextDouble() * 40);
+      // Vary the bar deterministically: today=100%, yesterday=92%, etc.
+      week[dayIndex] = baseXp * (1.0 - i * _dailyDecayFactor).clamp(_minXpPercentage, 1.0);
     }
     return week;
   }
@@ -144,18 +153,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 letterSpacing: -1,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.subtleBackground),
-              ),
-              child: const Icon(
-                Icons.share_rounded,
-                color: AppColors.textPrimary,
-                size: 20,
-              ),
+            Row(
+              children: [
+                // Ranked / Leaderboard entry point
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    if (widget.user != null) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              LeaderboardScreen(currentUser: widget.user!),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.accentPrimary.withValues(alpha: 0.3)),
+                    ),
+                    child: const Icon(
+                      Icons.leaderboard_rounded,
+                      color: AppColors.accentPrimary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.subtleBackground),
+                  ),
+                  child: const Icon(
+                    Icons.share_rounded,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -487,12 +529,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- 4. МАТРИЦА НАВЫКОВ (ПРО ФИЧА) ---
+  // --- 4. GROWTH MATRIX (BASED ON REAL USER STATS) ---
+  // Each axis reflects a different user dimension:
+  //   Posture Alignment  → total workouts completed (more reps = better posture)
+  //   Spine Mobility     → current streak (consistent training = improved mobility)
+  //   Core Intensity     → current level (higher level = stronger core engagement)
+  // TODO: Replace with per-category workout history once backend is wired up.
+  // Divisors define the "full" reference value for each axis (100% progress).
+  static const double _maxWorkoutsForPosture = 100.0;
+  static const double _maxStreakForMobility = 30.0;
+  static const double _maxLevelForIntensity = 10.0;
+
   Widget _buildGrowthMatrix() {
-    // Рассчитываем фокус на основе предпочтений юзера
-    double posture = _focus == 'posture' ? 0.8 : 0.4;
-    double mobility = _focus == 'mobility' ? 0.9 : 0.5;
-    double intensity = _focus == 'mixed' ? 0.7 : 0.3;
+    final double posture = (_totalWorkouts / _maxWorkoutsForPosture).clamp(0.05, 1.0);
+    final double mobility = (_streak / _maxStreakForMobility).clamp(0.05, 1.0);
+    final double intensity = (_level / _maxLevelForIntensity).clamp(0.05, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -502,28 +553,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          _buildMatrixBar("Posture Alignment", posture, Colors.blueAccent),
+          _buildMatrixBar("Posture Alignment", posture, Colors.blueAccent,
+              '$_totalWorkouts workouts'),
           const SizedBox(height: 16),
-          _buildMatrixBar("Spine Mobility", mobility, Colors.purpleAccent),
+          _buildMatrixBar("Spine Mobility", mobility, Colors.purpleAccent,
+              '$_streak day streak'),
           const SizedBox(height: 16),
-          _buildMatrixBar("Core Intensity", intensity, Colors.orangeAccent),
+          _buildMatrixBar("Core Intensity", intensity, Colors.orangeAccent,
+              'Level $_level'),
         ],
       ),
     );
   }
 
-  Widget _buildMatrixBar(String label, double value, Color color) {
+  Widget _buildMatrixBar(String label, double value, Color color, String statLabel) {
     return Row(
       children: [
         Expanded(
           flex: 2,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textSecondary,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                statLabel,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(

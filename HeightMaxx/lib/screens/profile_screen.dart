@@ -7,6 +7,10 @@ import 'package:firebase_auth/firebase_auth.dart'; // Добавили для к
 import '../models/user.dart';
 import '../theme/app_colors.dart';
 import 'welcome_screen.dart'; // Убедись, что путь правильный для экрана входа
+import 'leaderboard_screen.dart';
+import 'preferences_screen.dart';
+import 'workout_history_screen.dart';
+import 'notifications_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserProfile? user; // 1. ТЕПЕРЬ ЭКРАН ПРИНИМАЕТ ДАННЫЕ!
@@ -134,6 +138,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildAnimatedHeader(),
               const SizedBox(height: 40),
               _buildAnimatedStatRow(),
+              const SizedBox(height: 32),
+              _buildRankedCard(),
               const SizedBox(height: 48),
               _buildAccountActions(),
               const SizedBox(height: 32),
@@ -262,17 +268,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildRankedCard() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        if (widget.user != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => LeaderboardScreen(currentUser: widget.user!),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentGlow.withValues(alpha: 0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.leaderboard_rounded,
+                  color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GLOBAL RANKINGS',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'View Leaderboard',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white70, size: 28),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAccountActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: AppColors.textSecondary)),
         const SizedBox(height: 16),
-        _buildActionTile(Icons.tune_rounded, 'Preferences', () {}),
+        _buildActionTile(Icons.tune_rounded, 'Preferences', () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PreferencesScreen()),
+          );
+        }),
         const SizedBox(height: 8),
-        _buildActionTile(Icons.history_rounded, 'Workout History', () {}),
+        _buildActionTile(Icons.history_rounded, 'Workout History', () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (_) => WorkoutHistoryScreen(user: widget.user)),
+          );
+        }),
         const SizedBox(height: 8),
-        _buildActionTile(Icons.notifications_none_rounded, 'Notifications', () {}),
+        _buildActionTile(Icons.notifications_none_rounded, 'Notifications', () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          );
+        }),
       ],
     );
   }
