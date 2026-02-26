@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'bubble_tap_effect.dart';
 
 class GradientButton extends StatefulWidget {
   final String label;
@@ -65,13 +66,14 @@ class _GradientButtonState extends State<GradientButton>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: _scaleAnimation,
-      child: GestureDetector(
+      child: BubbleTapEffect(
         onTapDown: widget.onPressed != null ? _onTapDown : null,
         onTapUp: widget.onPressed != null ? _onTapUp : null,
         onTapCancel: widget.onPressed != null ? _onTapCancel : null,
         onTap: widget.onPressed != null && !widget.isLoading
             ? widget.onPressed
             : null,
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         child: Container(
           height: widget.height,
           decoration: BoxDecoration(

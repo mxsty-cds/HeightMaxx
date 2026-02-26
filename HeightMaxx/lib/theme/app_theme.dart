@@ -24,6 +24,12 @@ class AppTheme {
   static const double radiusLG = 24.0;
   static const double radiusXL = 32.0;
 
+  // ─── Bubble tap-effect constants ──────────────────────────────────────────
+  /// Duration of the expanding-bubble animation triggered on button press.
+  static const Duration bubbleDuration = Duration(milliseconds: 300);
+  /// Maximum radius (px) the outer bubble expands to.
+  static const double bubbleMaxRadius = 120.0;
+
   // ─── Text styles ─────────────────────────────────────────────────────────
   static const TextStyle headline1 = TextStyle(
     fontSize: 40,

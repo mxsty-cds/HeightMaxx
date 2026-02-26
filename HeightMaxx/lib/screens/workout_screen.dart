@@ -6,6 +6,7 @@ import '../models/user.dart';
 import '../models/exercise.dart';
 import '../theme/app_colors.dart';
 import 'workout_player_screen.dart';
+import '../widgets/bubble_tap_effect.dart';
 
 class WorkoutScreen extends StatefulWidget {
   final UserProfile? user;
@@ -466,11 +467,10 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _openPlayer(context, 0),
-                child: Padding(
+            child: BubbleTapEffect(
+              onTap: () => _openPlayer(context, 0),
+              borderRadius: BorderRadius.circular(28),
+              child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 22),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -497,7 +497,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
             ),
           ),
         ),
-      ),
     );
   }
 }
