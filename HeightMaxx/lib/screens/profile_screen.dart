@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart'; // Добавили для к
 
 import '../models/user.dart';
 import '../theme/app_colors.dart';
+import '../utils/measurement_utils.dart';
 import 'welcome_screen.dart'; // Убедись, что путь правильный для экрана входа
 import 'leaderboard_screen.dart';
 import 'preferences_screen.dart';
@@ -40,16 +41,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return 'BEGINNER';
   }
 
-  // Конвертация в футы
-  String get _heightFt {
-    if (widget.user?.heightCm == null) return '-- ft';
-    return '${(widget.user!.heightCm! / 30.48).toStringAsFixed(1)} ft';
-  }
+  // Конвертация в футы + дюймы
+  String get _heightFt =>
+      MeasurementUtils.formatHeight(widget.user?.heightCm);
 
-  String get _weightKg {
-    if (widget.user?.weightKg == null) return '-- kg';
-    return '${widget.user!.weightKg!.toStringAsFixed(0)} kg';
-  }
+  String get _formattedWeight =>
+      MeasurementUtils.formatWeight(widget.user?.weightKg);
 
   // --- ЛОГИКА ФОТО ---
   Future<void> _pickAvatarFrom(ImageSource source) async {
@@ -214,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildAnimatedStatRow() {
     final stats = [
       {'label': 'Height', 'val': _heightFt},
-      {'label': 'Weight', 'val': _weightKg},
+      {'label': 'Weight', 'val': _formattedWeight},
       {'label': 'Streak', 'val': _streak},
     ];
 

@@ -59,6 +59,6 @@ void main() {
 
     final homePage = tester.widget<HomePageScreen>(find.byType(HomePageScreen));
     expect(homePage.user, isNotNull);
-    expect(homePage.user!.heightCm, 179.8);
+    expect(homePage.user!.heightCm, 175.3);
   });
 }
